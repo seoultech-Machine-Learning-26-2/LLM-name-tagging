@@ -1,0 +1,24 @@
+{
+  "scope": "train only; validation/test not opened",
+  "rows": 1889,
+  "prompts": 105,
+  "models": 18,
+  "duplicate_texts": 0,
+  "feature_count": 32,
+  "constant_features": {
+    "line_count": 1.0,
+    "blank_line_ratio": 0.0,
+    "heading_per_100_lines": 0.0,
+    "bullet_per_100_lines": 0.0,
+    "numbered_per_100_lines": 0.0,
+    "code_fence_per_100_lines": 0.0,
+    "bold_per_100_chars": 0.0,
+    "link_per_100_chars": 0.0,
+    "backtick_per_100_chars": 0.0
+  },
+  "source_sha256": "8ff4fb7188dbe830c61fed6989dd278ba10cb1e6f2631a18273f25b1fd74a2cb",
+  "python": "3.12.2",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "matplotlib": "3.10.9"
+}
