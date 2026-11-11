@@ -16,12 +16,13 @@
 
 | 역할 | 기본 작업 브랜치 | 담당 모델 |
 | --- | --- | --- |
-| A · 좌은진 | `codex/a` | Random Forest / DeBERTa + 주제 적대 학습 |
-| B · 정혜원 | `codex/b` | Linear SVM / ModernBERT + 대조 학습 |
-| C · 양서린 | `codex/c` | XGBoost / Qwen 0.8B + LoRA (2B 선택) |
-| D · 원하람 | `codex/d` | Logistic Regression / Sentence-BERT + 문체 융합 |
+| A · 좌은진 | `a` | Random Forest / DeBERTa + 주제 적대 학습 |
+| B · 정혜원 | `b` | Linear SVM / ModernBERT + 대조 학습 |
+| C · 양서린 | `c` | XGBoost / Qwen 0.8B + LoRA (2B 선택) |
+| D · 원하람 | `d` | Logistic Regression / Sentence-BERT + 문체 융합 |
 
 - 새 역할 브랜치는 최신 main에서 만든다. 이미 담당자와 합의해 사용 중인 역할 브랜치가 있으면 그 이름을 유지해도 되며 사용자에게 알려 준다. 다른 역할 브랜치에 직접 커밋하지 않는다.
+- **새 브랜치 이름에는 `codex/` 접두사를 붙이지 않는다.** 기본 이름은 `a`, `b`, `c`, `d`다. 기존 브랜치 이름은 이 규칙 때문에 임의로 변경하거나 삭제하지 않는다.
 - main에서 모델 코드·실험 코드를 직접 개발하지 않는다. 구현 결과를 main으로 합치는 것은 사용자 또는 팀 확인 후 진행한다.
 - 기존 A 분할 데이터, B 특징 추출, C 평가 코드 등 main의 공통 산출물을 재사용한다. 공통 입력·분할·라벨·평가 방식을 바꾸려면 먼저 팀과 협의한다.
 - 다른 역할 코드와 미커밋 변경을 임의로 수정·삭제·덮어쓰지 않는다. 강제 push·브랜치 삭제·이력 초기화는 사용자 지시 없이 하지 않는다.
