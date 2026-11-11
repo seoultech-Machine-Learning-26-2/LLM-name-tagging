@@ -1,0 +1,5 @@
+,,ci_low,ci_high
+val,model_BA,0.2374,0.3434
+val,company_BA,0.4295,0.4712
+test,model_BA,0.2609,0.3406
+test,company_BA,0.4112,0.4587
