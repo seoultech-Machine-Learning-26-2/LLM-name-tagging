@@ -38,10 +38,10 @@
 
 | 담당 | 필수 모델 | 반드시 답할 질문 | 공통 업무 | 개인 보고서 |
 | --- | --- | --- | --- | --- |
-| A — 좌은진 | Random Forest | 트리 수와 깊이 제한이 일반화에 어떤 영향을 주는가? 단일 트리보다 항상 좋은가? | 데이터 명세·출처 관리, C와 트리/숲 비교 | `docs/experiments/A-random-forest.md` |
-| B — 정혜원 | Linear SVM | 문체만 쓸 때와 TF-IDF를 추가할 때 무엇이 달라지는가? | 공통 특징·입력 버전 관리 | `docs/experiments/B-svm.md` |
-| C — 양서린 | Decision Tree | 깊은 트리가 train을 잘 맞혀도 val에서 낮아지는가? | 공통 평가·통합 결과표 관리 | `docs/experiments/C-decision-tree.md` |
-| D — 원하람 | Logistic Regression / Softmax | 선형 경계와 규제가 이 데이터에 적절한가? 차원 축소가 어떤 정보를 잃는가? | PCA 비교, 보고서·발표 통합 | `docs/experiments/D-logistic-regression.md` |
+| A —  좌은진 | Random Forest | 트리 수와 깊이 제한이 일반화에 어떤 영향을 주는가? 단일 트리보다 항상 좋은가? | 데이터 명세·출처 관리, C와 트리/숲 비교 | `docs/experiments/A-random-forest.md` |
+| B —  정혜원 | Linear SVM | 문체만 쓸 때와 TF-IDF를 추가할 때 무엇이 달라지는가? | 공통 특징·입력 버전 관리 | `docs/experiments/B-svm.md` |
+| C —  양서린 | Decision Tree | 깊은 트리가 train을 잘 맞혀도 val에서 낮아지는가? | 공통 평가·통합 결과표 관리 | `docs/experiments/C-decision-tree.md` |
+| D —  원하람 | Logistic Regression / Softmax | 선형 경계와 규제가 이 데이터에 적절한가? 차원 축소가 어떤 정보를 잃는가? | PCA 비교, 보고서·발표 통합 | `docs/experiments/D-logistic-regression.md` |
 
 위 보고서 경로는 앞으로 만들 파일이다. 통합 담당이 다른 사람의 이론·분석을 대신 쓰는 구조가 아니다. **각자 코드, 결과표, 그림, 이론 설명을 함께 제출**하고 D가 모아 편집한다.
 
