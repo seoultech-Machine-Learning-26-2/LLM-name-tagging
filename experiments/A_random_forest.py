@@ -1,4 +1,4 @@
-"""[A] 공통 문체 특징 32개로 학습하는 Random Forest 실험 (작업 A-2 ~ A-4).
+"""[A] 공통 문체 특징 32개로 학습하는 Random Forest 모델.
 
 사용법 (저장소 최상위 폴더에서 실행):
     python experiments/A_random_forest.py                  # val로 설정 비교 (test는 열지 않음)
