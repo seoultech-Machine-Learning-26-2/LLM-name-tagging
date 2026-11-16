@@ -31,11 +31,12 @@ SEED = 42
 OUT = Path("results/course/B/svm")
 PREDS = Path("preds")
 CS = [0.1, 1, 10]
+MAX_ITER = 5000  # non-convergence is recorded in the `converged` column
 
 
 def make_pipe(kind, C):
     feat = Pipeline([("raw", StylometricTransformer())]) if kind == "style_raw" else make_extractor(kind)
-    return Pipeline([("feat", feat), ("svm", LinearSVC(C=C, random_state=SEED, max_iter=20000))])
+    return Pipeline([("feat", feat), ("svm", LinearSVC(C=C, random_state=SEED, max_iter=MAX_ITER))])
 
 
 def raw_metrics(y, pred):
@@ -44,6 +45,7 @@ def raw_metrics(y, pred):
 
 
 def run(kind, C, data):
+    print(f"start {kind} C={C} ({time.strftime('%H:%M:%S')})", flush=True)
     (Xtr, ytr, gtr), (Xva, yva) = data["train"], data["val"]
     name = f"B_svm_{kind}_C{C}"
     with warnings.catch_warnings(record=True) as caught:
@@ -62,7 +64,7 @@ def run(kind, C, data):
     save_pred(data["val_ids"], P, CLASSES, PREDS / f"val_{name}_seed{SEED}.csv")
     s = score(yva, P)
     row = {"run_id": name, "owner": "B", "model": "LinearSVC", "feature_set": kind,
-           "preprocessing": PREPROC[kind], "params": json.dumps({"C": C, "max_iter": 20000}),
+           "preprocessing": PREPROC[kind], "params": json.dumps({"C": C, "max_iter": MAX_ITER}),
            "seed": SEED, "split": "val", "n_samples": len(yva),
            "model_BA": s["model_BA"], "accuracy": s["model_Acc"], "macro_f1": s["model_F1"],
            "company_BA": s["company_BA"], "company_method": "prob_sum(calibrated)",
@@ -105,7 +107,7 @@ def main():
     style = StylometricTransformer().fit(tr.text)
     S = pd.DataFrame(style.transform(tr.text), columns=style.get_feature_names_out())
     constant = S.columns[S.nunique() == 1].tolist()
-    print(f"[B-1] style features={S.shape[1]}, constant on train={len(constant)}: {constant}")
+    print(f"[B-1] style features={S.shape[1]}, constant on train={len(constant)}: {constant}", flush=True)
 
     rows, fitted = [], {}
     # Minimum baseline: class prior
