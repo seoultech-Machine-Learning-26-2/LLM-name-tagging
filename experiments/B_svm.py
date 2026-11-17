@@ -5,6 +5,7 @@ Train only on train, compare on val. Test is never opened here.
 import json
 import platform
 import subprocess
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -126,6 +127,9 @@ def main():
     print(f"[B-1] style features={S.shape[1]}, constant on train={len(constant)}: {constant}", flush=True)
 
     rows, fitted = [], {}
+    if "--resume" in sys.argv:  # grid already saved metrics.csv; redo only the analysis below
+        df = pd.read_csv(OUT / "metrics.csv")
+        return analyze(df, fitted, data, va, constant)
     # Minimum baseline: class prior
     dummy = DummyClassifier(strategy="prior").fit(data["train"][0], data["train"][1])
     Pd = dummy.predict_proba(data["val"][0]); sd = score(yva, Pd)
@@ -142,10 +146,7 @@ def main():
             rows.append(row); fitted[(kind, C)] = (pipe, dva)
             print(f"{row['run_id']:28s} trainBA={row['svm_train_BA']:.3f} valBA={row['svm_val_BA']:.3f} "
                   f"calBA={row['model_BA']:.3f} fit={row['fit_seconds']}s conv={row['converged']}")
-    df = pd.DataFrame(rows)
-    svm = df[df.model == "LinearSVC"]
-    c_star = svm[svm.feature_set == "style"].sort_values("svm_val_BA", ascending=False).iloc[0]
-    c_star = float(json.loads(c_star.params)["C"])
+    c_star = best_style_c(pd.DataFrame(rows))
     print(f"[B-2] C* (best style val BA) = {c_star}")
 
     # B-4: scaling evidence at C*
@@ -154,9 +155,30 @@ def main():
     print(f"{row['run_id']:28s} trainBA={row['svm_train_BA']:.3f} valBA={row['svm_val_BA']:.3f} conv={row['converged']}")
     df = pd.DataFrame(rows)
     df.to_csv(OUT / "metrics.csv", index=False)
+    analyze(df, fitted, data, va, constant)
+
+
+def C_of(params):
+    return json.loads(params).get("C")  # dummy baseline row has no C
+
+
+def best_style_c(df):
+    # ties (all style C gave equal val BA) -> stable sort keeps grid order, i.e. the smallest C / strongest regularization
+    style = df[(df.model == "LinearSVC") & (df.feature_set == "style")]
+    return float(C_of(style.sort_values("svm_val_BA", ascending=False, kind="stable").iloc[0].params))
+
+
+def analyze(df, fitted, data, va, constant):
+    yva = data["val"][1]
+    c_star = best_style_c(df)
+    for kind in ["style", "tfidf", "combined"]:
+        if (kind, c_star) not in fitted:  # --resume: refit the uncalibrated SVM only (deterministic, seed fixed)
+            print(f"refit {kind} C={c_star} for analysis", flush=True)
+            pipe = make_pipe(kind, c_star).fit(*data["train"][:2])
+            fitted[(kind, c_star)] = (pipe, pipe.decision_function(data["val"][0]))
 
     # B-3 table: fixed C* across inputs vs. per-input retuned C
-    fixed = df[(df.model == "LinearSVC") & (df.params.map(lambda p: json.loads(p)["C"] == c_star))]
+    fixed = df[(df.model == "LinearSVC") & (df.params.map(C_of) == c_star)]
     best = df[df.model == "LinearSVC"].sort_values("svm_val_BA", ascending=False).groupby("feature_set").head(1)
     cols = ["run_id", "feature_set", "params", "svm_train_BA", "svm_val_BA", "svm_val_acc", "svm_val_macro_f1",
             "model_BA", "accuracy", "macro_f1", "company_BA", "cal_model_LogLoss", "cal_sibling_Acc"]
