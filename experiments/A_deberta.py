@@ -104,7 +104,9 @@ def load_tokenizer(name):
 
 
 def load_backbone(name):
-    return AutoModel.from_pretrained(name)
+    # 최신 transformers는 체크포인트에 저장된 정밀도(fp16)로 불러올 수 있다.
+    # 헤드는 fp32이므로 인코더도 fp32로 맞춘다. GPU에서는 autocast가 계산만 fp16으로 바꾼다.
+    return AutoModel.from_pretrained(name).float()
 
 
 # =========================================================
