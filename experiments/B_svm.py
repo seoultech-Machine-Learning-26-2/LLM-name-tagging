@@ -20,7 +20,8 @@ from sklearn.dummy import DummyClassifier
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from sklearn.model_selection import GroupKFold
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 
 from evaluate import CLASSES, M2C, confusion, save_pred, score
@@ -34,8 +35,22 @@ CS = [0.1, 1, 10]
 MAX_ITER = 5000  # non-convergence is recorded in the `converged` column
 
 
+def make_feat(kind):
+    raw = Pipeline([("raw", StylometricTransformer())])
+    if kind == "style_raw":
+        return raw
+    # Centered scaling (common extractor uses with_mean=False): uncentered dense style columns next to
+    # L2-normalized TF-IDF made liblinear take ~173 s per combined fit on Colab.
+    style = Pipeline([("raw", StylometricTransformer()), ("scale", StandardScaler())])
+    if kind == "style":
+        return style
+    if kind == "tfidf":
+        return make_extractor("tfidf")
+    return FeatureUnion([("style", style), ("tfidf", make_extractor("tfidf"))])
+
+
 def make_pipe(kind, C):
-    feat = Pipeline([("raw", StylometricTransformer())]) if kind == "style_raw" else make_extractor(kind)
+    feat = make_feat(kind)
     return Pipeline([("feat", feat), ("svm", LinearSVC(C=C, random_state=SEED, max_iter=MAX_ITER))])
 
 
@@ -52,6 +67,7 @@ def run(kind, C, data):
         warnings.simplefilter("always", ConvergenceWarning)
         pipe = make_pipe(kind, C)
         t0 = time.perf_counter(); pipe.fit(Xtr, ytr); fit_s = time.perf_counter() - t0
+        print(f"  fit {fit_s:.1f}s, now 5-fold calibration", flush=True)
         t0 = time.perf_counter(); dva = pipe.decision_function(Xva); pred_s = time.perf_counter() - t0
         tr_raw = raw_metrics(ytr, pipe.decision_function(Xtr).argmax(1))
         va_raw = raw_metrics(yva, dva.argmax(1))
@@ -75,10 +91,10 @@ def run(kind, C, data):
     return row, pipe, dva
 
 
-PREPROC = {"style": "32 stylometry -> StandardScaler(with_mean=False), fit on train",
+PREPROC = {"style": "32 stylometry -> StandardScaler (centered), fit on train",
            "style_raw": "32 stylometry, NO scaling",
            "tfidf": "char 3-5gram TF-IDF (max 30000, min_df=2, sublinear), fit on train",
-           "combined": "scaled stylometry + char TF-IDF (FeatureUnion), fit on train"}
+           "combined": "centered-scaled stylometry + char TF-IDF (FeatureUnion), fit on train"}
 
 
 def save_confusion(run_meta, name):
