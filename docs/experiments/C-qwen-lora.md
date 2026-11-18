@@ -18,7 +18,7 @@
 | 모델 구분 | 심화 모델 |
 | 실험 날짜 | 2026-11-15 ~ 2026-11-17 (seed 42, Colab), 2026-11-17 (seed 43·44, Kaggle), 2026-11-18 (앙상블·test 예측) |
 | 실험 환경 | PyTorch fp32 가중치 + fp16 autocast, gradient checkpointing, flash-linear-attention |
-| 코드 | Qwen 학습·앙상블·test 예측 노트북 원본(.ipynb)은 **추가 예정**(Kaggle에서 내려받아 그대로 올림). 실행 위치: Kaggle 노트북 `yangseorin/llmnametagging`(학습 Version 1·2, 앙상블·예측 2026-11-18 세션), seed 42는 Colab |
+| 코드 | `seorin` `e5b3c9b`, Kaggle에서 내려받은 원본 그대로: 학습 [`notebooks/kaggle_version2/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_version2/llmnametagging.ipynb) (Version 2, V3·Q4 seed 43·44 학습 로그 포함) · 앙상블·test 예측 [`notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb) (셀 B·C 출력 포함). seed 42(Colab) 노트북은 보관하지 않았다. 실행 위치: Kaggle 노트북 `yangseorin/llmnametagging`(학습 Version 1·2, 앙상블·예측 2026-11-18 세션), seed 42는 Colab |
 
 ## 2. 실험 설정
 
@@ -232,10 +232,10 @@ Q1(동결)의 Macro F1은 기록하지 않아 BA로 비교한다(클래스당 �
 
 | 산출물 | 저장 경로 |
 | --- | --- |
-| 학습 코드 | Qwen 학습·앙상블·test 예측 노트북 원본(.ipynb)은 **추가 예정**(Kaggle에서 내려받아 그대로 올림) |
+| 학습 코드 | `seorin`: 학습 [`notebooks/kaggle_version2/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_version2/llmnametagging.ipynb) · 앙상블·test 예측 [`notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb) (원본 그대로) |
 | 모델 체크포인트 | 깃허브에 올리지 않음(LoRA 어댑터 약 20MB씩). seed 42: 개인 Google Drive `mlproject/results/` 및 Kaggle 비공개 데이터셋 `yangseorin/c-assets` · seed 43·44: Kaggle 노트북 `yangseorin/llmnametagging` Version 2 Output `results/` |
 | 설정 / 체크포인트 (필요 시) | 복원: `AutoModelForCausalLM.from_pretrained('Qwen/Qwen3.5-0.8B').model`에 `PeftModel.from_pretrained(본체, {run}_lora_ep3)`를 얹고 `{run}_head_ep3.pt`를 `FlatHead`/`HierHead`에 불러온다(앙상블·예측 노트북 셀 3). 팀원이 쓰려면 Kaggle 데이터셋·노트북 공유가 필요하다 |
-| 평가 결과 CSV | `seorin` [`preds/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds): `val_C_FINAL.csv`, `test_C_FINAL.csv`, `test_C_{Q2,Q3,V3_seed42~44,Q4_seed42~44}.csv` (test 채점 없음) · 설정별 val 예측은 위 체크포인트 위치에 함께 있음 |
+| 평가 결과 CSV | `seorin` [`preds/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds): `val_C_FINAL.csv`, `test_C_FINAL.csv`, `test_C_{Q2,Q3,V3_seed42~44,Q4_seed42~44}.csv` (test 채점 없음) · 개별 모델 val 예측(`seorin` [`463966c`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/463966c/preds)): `val_Q2_lora_flat_seed42.csv`, `val_Q3_lora_centered_seed42.csv`, `val_V3_rdrop_seed42~44.csv`, `val_Q4_hier_seed42~44.csv` (test 파일 `test_C_V3_seed43.csv` ↔ val `val_V3_rdrop_seed43.csv`처럼 짝) |
 | Confusion Matrix | 4.1절 표 (그림 없음) |
 | 특징 분석 그래프 | 없음 (4.2절 표) |
 | 최종 실험 보고서 | 이 문서 · 요약: [C 실험 요약](C-summary.md) |
