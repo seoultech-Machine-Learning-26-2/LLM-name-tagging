@@ -103,7 +103,7 @@
 
 ### Q-9. 실행 환경 버전 기록 방식
 - 작성: C·양서린 · 2026-11-18 · 대상: 전원 · 상태: 열림
-- 내용: 보고서 첫 문항이 라이브러리 버전이다. Kaggle·Colab에서 매번 `pip install -U`로 설치하면 실행한 날마다 버전이 달라질 수 있다. 각자 실행 당시 버전을 어디에 모을지(결과 문서 1절 / `requirements-final.txt` / [실행 안내](notebook-environments.md)) 정한다. C의 Kaggle 버전은 아직 [확인 필요]로 남아 있다.
+- 내용: 보고서 첫 문항이 라이브러리 버전이다. Kaggle·Colab에서 매번 `pip install -U`로 설치하면 실행한 날마다 버전이 달라질 수 있다. 각자 실행 당시 버전을 어디에 모을지(결과 문서 1절 / `requirements-final.txt` / [실행 안내](notebook-environments.md)) 정한다. C는 2026-11-18 Kaggle 세션에서 버전을 확인해 결과 문서 1절에 적었다(학습 당시 버전과 다를 수 있음).
 - 답변:
 - 결정:
 

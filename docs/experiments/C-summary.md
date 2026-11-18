@@ -132,5 +132,5 @@ seed 3개 평균에서는 Q4가 V3보다 +1.9%p 높아 채택 기준을 넘었�
 
 - 학습: Colab T4(seed 42) → Kaggle T4(seed 43·44), 1회 학습 약 1시간 10분, 최대 메모리 5.4GB
 - XGBoost 탐색: Linux CPU, Python 3.13.18, scikit-learn 1.9.1, xgboost 3.4.1 (상세는 [C · XGBoost](C-xgboost.md) 1절)
-- Kaggle 라이브러리 버전: [확인 필요 — transformers, peft, torch, xgboost, scikit-learn]
+- Kaggle 라이브러리 버전(2026-11-18 확인): Python 3.13.16 / NumPy 2.1.3 / pandas 2.3.3 / scikit-learn 1.6.1, torch 2.11.0+cu130, transformers 5.23.0, peft 0.21.3, accelerate 1.16.0, xgboost 3.4.1, scipy 1.16.3 (flash-linear-attention 버전은 미기록). 학습 당시 버전과 다를 수 있다(매번 최신 설치)
 - 모델 체크포인트: 깃허브 미포함. 저장 위치·복원 방법은 [C · Qwen LoRA](C-qwen-lora.md) 7절

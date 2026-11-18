@@ -12,8 +12,8 @@
 | --- | --- |
 | 담당자 | 양서린(C) |
 | OS/CPU/RAM/GPU | Google Colab, NVIDIA T4 16GB (seed 42) → Kaggle Notebook, T4 ×2 중 1개 사용 (seed 43·44, 예측) |
-| Python / NumPy / pandas / scikit-learn 버전 | [확인 필요] |
-| 추가 사용 라이브러리 버전 | 실행할 때마다 `pip install -U transformers peft accelerate flash-linear-attention` (torchao 제거). 정확한 버전 [확인 필요] |
+| Python / NumPy / pandas / scikit-learn 버전 | Python 3.13.16 / NumPy 2.1.3 / pandas 2.3.3 / scikit-learn 1.6.1 (Kaggle, Linux 6.18.55) |
+| 추가 사용 라이브러리 버전 | torch 2.11.0+cu130, transformers 5.23.0, peft 0.21.3, accelerate 1.16.0, xgboost 3.4.1, scipy 1.16.3 (flash-linear-attention 버전은 미기록). 2026-11-18 Kaggle 세션에서 같은 설치 명령으로 확인한 값이다. 매번 `pip install -U`로 설치했으므로 11/17 학습 당시·Colab(seed 42) 버전과 다를 수 있다. 설치: `pip uninstall -y torchao` 후 `pip install -U transformers peft accelerate flash-linear-attention` |
 | 실험 모델 | `Qwen/Qwen3.5-0.8B` 텍스트 본체(`AutoModelForCausalLM(...).model`) + LoRA + 분류 헤드 |
 | 모델 구분 | 심화 모델 |
 | 실험 날짜 | 2026-11-15 ~ 2026-11-17 (seed 42, Colab), 2026-11-17 (seed 43·44, Kaggle), 2026-11-18 (앙상블·test 예측) |

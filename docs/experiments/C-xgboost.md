@@ -12,8 +12,8 @@
 | --- | --- |
 | 담당자 | 양서린(C) |
 | OS/CPU/RAM/GPU | 탐색: Linux 6.18 x86_64, CPU 2코어, RAM 7GB, GPU 없음 (Claude 작업 환경) · 최종 재학습: Kaggle Notebook(Linux) |
-| Python / NumPy / pandas / scikit-learn 버전 | 탐색: 3.13.18 / 2.5.3 / 3.0.5 / 1.9.1 · Kaggle 최종 재학습: [확인 필요] |
-| 추가 사용 라이브러리 버전 | 탐색: xgboost 3.4.1, scipy 1.18.1 · Kaggle: [확인 필요] |
+| Python / NumPy / pandas / scikit-learn 버전 | 탐색: 3.13.18 / 2.5.3 / 3.0.5 / 1.9.1 · Kaggle 최종 재학습: 3.13.16 / 2.1.3 / 2.3.3 / 1.6.1 |
+| 추가 사용 라이브러리 버전 | 탐색: xgboost 3.4.1, scipy 1.18.1 · Kaggle: xgboost 3.4.1, scipy 1.16.3 (2026-11-18 확인). 두 환경의 val BA는 같았다(seed 3개 앙상블 0.3813) |
 | 실험 모델 | XGBoost (`XGBClassifier`, `multi:softprob`) |
 | 모델 구분 | 고전 ML |
 | 실험 날짜 | 2026-11-15 ~ 2026-11-16 (탐색), 2026-11-18 (최종 재학습·예측) |
