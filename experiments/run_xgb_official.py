@@ -1,25 +1,13 @@
-# C · XGBoost 탐색 실험 (val 비교, test 미사용)
-#
-# 실행: 저장소 루트에서 `python experiments/C_xgboost.py` (CPU, 수 분)
-# - 2026-11-15~16에 실행한 탐색 스크립트에서 데이터·평가 코드 경로만 저장소 기준으로 바꿨다.
-# - 그룹 1: B 문체 32개, 깊이 3/6 × 학습률 0.05/0.1
-# - 그룹 2: 깊이 3 + 규제(min_child_weight 5, reg_lambda 10), seed 42/43/44
-# - 그룹 3: + 기능어 99개 / + 문자 3~5그램 TF-IDF→SVD 100 / 둘 다(seed 3개)
-# - 그룹 4: 전체 특징 + 질문 중심화(같은 prompt_id 18개 평균 빼기, seed 3개) → 최종 설정
-#   (질문 중심화는 같은 질문의 응답 묶음을 이용하므로 응답 단독 예측과 구분해 보고한다.)
-# - 조기 종료는 val mlogloss 기준(50회). 변환기(TF-IDF·SVD·문체)는 train에만 fit.
-
-import os, sys, re, time, numpy as np, pandas as pd, xgboost as xgb
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, 'eval')); sys.path.insert(1, ROOT)
-import evaluate as E                                   # eval/evaluate.py (공통 평가 코드)
+import sys, re, time, numpy as np, pandas as pd, xgboost as xgb
+sys.path.insert(0, '.')
+import official_eval as E
 from features.stylometry import StylometricTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import TruncatedSVD
 from scipy.optimize import linear_sum_assignment
 from sklearn.metrics import balanced_accuracy_score
-S = os.path.join(ROOT, 'data', 'split')
-tr = pd.read_csv(os.path.join(S, 'train.csv')); va = pd.read_csv(os.path.join(S, 'val.csv'))   # test는 읽지 않는다
+U = '/mnt/user-data/uploads/'
+tr = pd.read_csv(U + '6ddfa492-train.csv'); va = pd.read_csv(U + '1ab65342-val.csv')   # test NOT loaded
 cid = {c: i for i, c in enumerate(E.CLASSES)}
 ytr = tr.model.map(cid).values; yva = va.model.map(cid).values
 st = StylometricTransformer().fit(tr.text)
