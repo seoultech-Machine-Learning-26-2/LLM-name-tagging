@@ -1,0 +1,8 @@
+﻿,Validation,Test
+Accuracy,0.6692 ± 0.0000,0.6594
+Precision (Macro),0.5499 ± 0.0000,0.5638
+Recall (Macro) = BA,0.4557 ± 0.0000,0.4380
+F1-score (Macro),0.4277 ± 0.0000,0.4117
+F1-score (Weighted),0.6032 ± 0.0000,0.5936
+Log loss,1.0240 ± 0.0000,1.0719
+ECE,0.1475 ± 0.0000,0.1517
