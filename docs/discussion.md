@@ -21,6 +21,8 @@
 
 ## 열린 항목
 
+> **2026-11-18 회의:** 아래 항목 중 이 회의에서 결정하지 않은 것은 **11/25 중간 발표가 끝난 뒤, 팀 앙상블 전에** 정한다.
+
 ### Q-1. test 채점 방식: 각자 1회 → 팀 앙상블 후 일괄 1회
 - 작성: B·정혜원 · 2026-11-18 · 대상: 전원 · 상태: 열림 (C 제안, B·C 동의 · A·D 확인은 회의에서)
 - 내용: 기존 계획([다음 작업 계획](next-tasks-A-B-C-D.md) 7절)은 11/17~11/18에 각자 고정한 모델의 test를 1회 평가하는 것이었다. B는 이 계획대로 11/18 12:55에 val로 고정한 4개 설정의 test를 1회 채점했다(`hyewon` `cd6d620`, 채점 뒤 바꾼 설정 없음). 같은 날 13:23 C가 "test는 정답 없는 예측 파일만 만들고 C가 마지막에 1회 채점"을 제안했다(`seorin` `4834a7d`).
@@ -66,7 +68,7 @@
 - 결정:
 
 ### Q-6. 11/25 중간 발표 준비
-- 작성: B·정혜원 · 2026-11-18 · 대상: 전원 · 상태: 열림
+- 작성: B·정혜원 · 2026-11-18 · 대상: 전원 · 상태: 결정 (2026-11-18 회의)
 - 내용: 중간 발표가 2026-11-25로 잡혔다(프로젝트 평가의 30%, [다음 작업 계획](next-tasks-A-B-C-D.md) 기준 "각자 자기 모델·코드·결과를 설명하고 질문에 답하는" 발표).
 - 교수님 안내(정혜원 전달, 2026-11-18): 최종 발표가 아니므로 **AI를 써서 실험을 돌렸더라도 각자 자기가 한 것이 무엇인지 질의응답**을 한다. 따라서 결과 숫자보다 **각자 자기 담당 부분을 직접 설명할 수 있는지**가 중요하다. 개인별 준비 예시:
   - 내 모델의 원리(손실함수·하이퍼파라미터가 하는 일)와 그 설정을 고른 이유
@@ -82,13 +84,13 @@
   - **준비 마감:** 슬라이드 초안·취합 마감일, 리허설 여부.
   - **질의응답 대비:** 서로 예상 질문을 던져 보는 연습을 할지, 각자 자기 결과 문서(`docs/experiments/`)를 설명 자료로 쓸지.
 - 답변:
-- 결정:
+- 결정 (2026-11-18 회의, 정혜원 전달): 역할은 **B 발표, A PPT 제작, C 발표 자료 정리, D 발표 대본 제작**. 모두 11/25 중간 발표 전까지 끝내며, 개인 마감일은 사람마다 다르다(날짜는 각자 관리, 이 문서에는 미기록).
 
 ### Q-7. C 작업 브랜치·산출물 위치
 - 작성: C·양서린 · 2026-11-18 · 대상: 전원 · 상태: 열림
 - 내용:
   - C 작업 브랜치는 `seorin`이다([AGENTS.md](../AGENTS.md) 2절 표에 반영).
-  - 코드: `seorin` `experiments/C_xgboost.py`, `C_qwen_lora.py`, `C_ensemble_predict.py` · 예측: `seorin` `preds/` (val·test, test 채점 없음) · 결과 문서: [C 요약](experiments/C-summary.md), [XGBoost](experiments/C-xgboost.md), [Qwen LoRA](experiments/C-qwen-lora.md)
+  - 코드: `seorin` `experiments/run_xgb_official.py`, `cv.py`, `bfeat.py`(XGBoost, 실행한 원본) · Qwen Kaggle 노트북 원본 `notebooks/kaggle_version2/`(학습), `notebooks/kaggle_session_2026-11-18/`(앙상블·test 예측) · 예측: `seorin` `preds/` (val·test, test 채점 없음) · 결과 문서: [C 요약](experiments/C-summary.md), [XGBoost](experiments/C-xgboost.md), [Qwen LoRA](experiments/C-qwen-lora.md)
   - 정답 열을 뺀 test 파일 `seorin` `preds/test_nolabel.csv`를 팀원 예측용으로 쓸 수 있다.
   - Qwen 어댑터(체크포인트)는 깃허브에 올리지 않고 Kaggle(비공개 데이터셋·노트북 출력)과 개인 드라이브에 있다. 다시 실행이 필요하면 공유 방법을 정한다.
   - 처음에 `seorin` 브랜치에서 `discussion.md`를 고친 커밋(`4834a7d`)은 이 항목과 Q-1~Q-3 답변으로 대신한다.
@@ -106,6 +108,37 @@
 - 내용: 보고서 첫 문항이 라이브러리 버전이다. Kaggle·Colab에서 매번 `pip install -U`로 설치하면 실행한 날마다 버전이 달라질 수 있다. 각자 실행 당시 버전을 어디에 모을지(결과 문서 1절 / `requirements-final.txt` / [실행 안내](notebook-environments.md)) 정한다. C는 2026-11-18 Kaggle 세션에서 버전을 확인해 결과 문서 1절에 적었다(학습 당시 버전과 다를 수 있음).
 - 답변:
 - 결정:
+
+### Q-10. 팀 앙상블 전에 맞춰야 할 차이 (4개 브랜치 비교)
+- 작성: B·정혜원 · 2026-11-18 · 대상: 전원 · 상태: 일부 결정 (2·3·4번 결정, 나머지는 중간 발표 후)
+- 근거: 2026-11-18 16시경 `eunjin`(A)·`hyewon`(B)·`seorin`(C)·`haram`(D) 브랜치의 코드·문서·`preds/`를 비교했다. 저장소에 있는 예측 파일(B, C, D 융합)은 공통 `evaluate.py`로 다시 채점해 문서 숫자와 일치하고 형식(`id` + 18개 확률, 알파벳순)도 맞는 것을 확인했다.
+- 현황 (val 18개 모델 BA, 각 문서 기준):
+
+  | 담당 | 고전 | 심화 | 질문 중심화 |
+  | --- | --- | --- | --- |
+  | A | Random Forest 0.205 | DeBERTa 결과 없음(코드만) | 안 씀 |
+  | B | Linear SVM 0.301 | ModernBERT 0.341 | 안 씀 |
+  | C | XGBoost 0.381 | Qwen LoRA 앙상블 0.548, 최종(+XGB) 0.551 | 씀 |
+  | D | Logistic Regression 0.412 | Sentence-BERT 융합 0.248 (문체만 0.275) | 고전만 씀 |
+
+- 내용 (차이점):
+  1. **예측 파일 짝이 맞지 않는다.** 앙상블은 val로 조합을 고르고 test에 적용하므로 같은 모델의 val·test 파일이 모두 필요하다. A: val·test 모두 저장소에 없음. C: Qwen 개별 모델은 test만 있고 val 없음. D: test 없음, Logistic Regression 파일 없음, 융합은 seed 42만. B: 모두 있음.
+  2. **질문 중심화 사용 여부가 다르다.** C(XGBoost·Qwen)와 D(Logistic Regression)는 같은 질문 응답 18개를 함께 써서 예측하고, A·B·D 융합은 응답 하나만 본다. 섞으면 "응답 단독 예측" 조건이 깨진다(Q-8과 연결).
+  3. **이미 앙상블된 파일이 있다.** `C_FINAL` = Qwen 6개 평균 × 0.8 + XGBoost × 0.2. `C_FINAL`과 `C_XGB`를 함께 넣으면 XGBoost가 두 번 들어간다.
+  4. **seed 저장 방식이 다르다.** B는 seed별 파일, C는 seed 평균 파일 1개, D 융합은 seed 42 파일만(문서 숫자는 3개 평균), A는 파일 없음. "seed 평균 val BA" 선택 규칙을 쓰려면 통일해야 한다.
+  5. **확률 보정 정도가 다르다.** val 18개 모델 ECE: A 0.04, C 최종 0.06, B SVM 0.06(sigmoid 보정), D 융합 0.12, B ModernBERT 0.20. 단순 평균하면 확신이 큰 모델이 결과를 더 끈다.
+  6. **설정·epoch 선택 방식이 다르다.** A: 차이가 seed 표준편차 이내면 LogLoss 낮은 쪽. B·D 융합: val 최고 epoch(val 점수가 약간 부풀 수 있음). C Qwen: epoch 3 고정. D Logistic Regression: val 최고 + bootstrap 비교.
+  7. **입력 처리가 조금씩 다르다.** 최대 토큰 길이 B ModernBERT 512, C Qwen 384, D MiniLM은 문서에 없음. 문자 TF-IDF는 C 기준선 2~6그램, B·D 3~5그램(B 30,000개, D 5,000개). 문체 32개는 모두 B 공통 코드.
+  8. **기록 상태가 다르다.** A(11/17)·B(11/18)는 이전 계획대로 test를 1회 채점한 뒤 공식 결과에서 뺐다. C·D는 채점하지 않았다. A 문서에는 "11/18 팀 회의에서 일괄 채점 결정"이라고 적혀 있다(회의 전이면 수정 필요). D Logistic Regression 수치는 Kaggle이 아닌 다른 환경에서 측정했다고 적혀 있다.
+- 정할 것:
+  1. 각자 val·test 예측 파일을 짝으로 12/14까지 `preds/`에 올리기 (A 전부, C Qwen 개별 val, D test·Logistic Regression)
+  2. 질문 중심화 모델을 앙상블에 섞을지, "응답 단독" / "질문 묶음 이용" 앙상블을 따로 만들지
+  3. `C_FINAL`처럼 이미 섞은 파일을 넣을지, 개별 모델 파일로만 할지
+  4. seed 저장 방식(seed별 파일 vs 평균 파일) 통일
+  5. 결합 방법: 확률 단순 평균 / 보정 후 평균 / 가중 평균(가중치는 val로만)
+- 답변:
+  - C·양서린 (2026-11-18): 1번(C 몫)은 끝냈다. Qwen 개별 모델 val 8개를 `seorin` `preds/`에 올렸다(`463966c`: Q2·Q3 seed 42, V3·Q4 seed 42/43/44). 공통 `evaluate.py`로 다시 채점해 문서 숫자와 같고, 6개 평균 × 0.8 + `val_C_XGB` × 0.2가 `val_C_FINAL`과 일치한다. 이름 짝: `test_C_V3_seed43.csv` ↔ `val_V3_rdrop_seed43.csv`, `test_C_Q2.csv` ↔ `val_Q2_lora_flat_seed42.csv` 식이다. 개별 파일이 모두 있으므로 3번에서 `C_FINAL` 대신 개별 파일만 쓰는 것도 가능하다. 2~5번은 회의에서 정한다.
+- 결정: 1, 5, 6, 7은 앙상블 시점에 결정해도 되는 것이므로 지금 생각하지 않는다. 2는 4명이 모두 11/20까지 질문 중심화를 진행해 github에 올리기로 했고, 3은 C가 Qwen 6개 파일로 고정하기로 한다. 4는 B에 맞게 A, C, D가 seed별로 측정한다. 결정하지 않은 항목은 11/25 중간 발표가 끝난 뒤, 팀 앙상블 전에 정한다(2026-11-18 회의, 정혜원 전달).
 
 ## 결정된 항목
 
