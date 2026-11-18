@@ -5,6 +5,12 @@ GPU (Colab) only. Run from repo root:
     python -m experiments.B_modernbert --lam 0.1    # B-6: CE + lam * SupCon
 Both variants share model, max_len, sampler, optimizer, epochs and seed; only lam differs.
 Train on train, pick the epoch by val model BA. Test is never opened here.
+
+Question centering (team decision 2026-11-18, Q-10), lam=0 only:
+    python -m experiments.B_modernbert --batch question --epochs 8           # control: one question per batch
+    python -m experiments.B_modernbert --batch question --center --epochs 8  # + head input [h ; h - question mean]
+Each batch holds all responses to one prompt, so the batch mean is the question mean (as in C's Qwen runs);
+val/test are predicted one question at a time the same way. No labels are used for the mean.
 """
 import argparse
 import json
@@ -56,29 +62,43 @@ def pk_batches(y, p, k, rng):
         out.append(batch)
 
 
+def question_batches(pid, rng):
+    """One batch = every row of one prompt (prompt order shuffled), so the batch mean is that question's mean."""
+    groups = [np.where(pid == p)[0] for p in np.unique(pid)]
+    return [groups[i] for i in rng.permutation(len(groups))]
+
+
 class Net(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, center=False):
         super().__init__()
+        self.center = center
         self.enc = AutoModel.from_pretrained(CKPT, revision=REV)
-        self.head = torch.nn.Linear(self.enc.config.hidden_size, 18)
+        self.head = torch.nn.Linear(self.enc.config.hidden_size * (2 if center else 1), 18)
 
     def forward(self, ids, mask):
         h = self.enc(input_ids=ids, attention_mask=mask).last_hidden_state
         m = mask.unsqueeze(-1).to(h.dtype)
         emb = (h * m).sum(1) / m.sum(1)  # mean pooling
+        if self.center:  # caller guarantees the batch is exactly one question's responses
+            emb = torch.cat([emb, emb - emb.mean(0, keepdim=True)], 1)
         return self.head(emb), emb
 
 
 @torch.no_grad()
-def predict(net, tok, texts, args, dev):
+def predict(net, tok, texts, args, dev, pid=None):
+    """Rows come back in input order. With pid, each forward pass is one whole question (needed for centering)."""
     net.eval()
-    logits, embs = [], []
-    for i in range(0, len(texts), 64):
-        b = tok(list(texts[i:i + 64]), truncation=True, max_length=args.max_len, padding=True, return_tensors="pt").to(dev)
+    chunks = [np.where(pid == p)[0] for p in np.unique(pid)] if pid is not None else \
+        [np.arange(i, min(i + 64, len(texts))) for i in range(0, len(texts), 64)]
+    P, E = np.zeros((len(texts), 18), np.float32), None
+    for ix in chunks:
+        b = tok(list(texts[ix]), truncation=True, max_length=args.max_len, padding=True, return_tensors="pt").to(dev)
         with torch.autocast("cuda", dtype=torch.float16):
             lg, e = net(b.input_ids, b.attention_mask)
-        logits.append(lg.float().cpu()); embs.append(e.float().cpu())
-    return torch.cat(logits).softmax(1).numpy(), torch.cat(embs).numpy()
+        if E is None:
+            E = np.zeros((len(texts), e.shape[1]), np.float32)
+        P[ix], E[ix] = lg.float().softmax(1).cpu().numpy(), e.float().cpu().numpy()
+    return P, E
 
 
 def main():
@@ -93,15 +113,22 @@ def main():
     ap.add_argument("--k", type=int, default=2, help="samples per class per batch")
     ap.add_argument("--save_test", action="store_true",
                     help="also save test probabilities of the val-selected epoch (never scored here)")
+    ap.add_argument("--batch", choices=["pk", "question"], default="pk",
+                    help="pk: p classes x k samples (SupCon); question: all responses to one prompt per batch")
+    ap.add_argument("--center", action="store_true", help="head input [h ; h - question mean] (needs --batch question)")
     ap.add_argument("--save_model", default=None,
                     help="dir (e.g. on Google Drive) to save the val-selected epoch weights; ~300MB fp16, too big for git")
     args = ap.parse_args()
+    assert not args.center or args.batch == "question", "--center needs --batch question"
+    assert args.batch == "pk" or args.lam == 0, "question batches hold one answer per model, so SupCon has no positives"
     assert torch.cuda.is_available(), "GPU runtime required (Colab: Runtime > Change runtime type > T4 GPU)"
     dev = "cuda"
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
+    qb = args.batch == "question"
 
-    name = f"B_modernbert_lam{args.lam:g}" + ("" if args.epochs == 4 else f"_ep{args.epochs}")
+    name = f"B_modernbert_lam{args.lam:g}" + ("" if args.epochs == 4 else f"_ep{args.epochs}") + \
+        ("_qbatch" if qb else "") + ("_center" if args.center else "")
     out = Path("results/course/B/modernbert") / f"{name}_seed{args.seed}"
     if (out / "summary.json").exists():  # lets a reconnected Colab rerun skip finished runs
         print(f"skip {out} (summary.json exists)")
@@ -109,14 +136,17 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     frames = load_splits("data/split", include_test=args.save_test)
     tr, va = frames["train"], frames["val"].sort_values("id").reset_index(drop=True)
-    te = frames["test"].sort_values("id").reset_index(drop=True) if args.save_test else None
+    # test labels are dropped on load (team rule: test predictions only, scored once by C)
+    te = frames["test"].sort_values("id").reset_index(drop=True).drop(columns="model") if args.save_test else None
     idx = {m: i for i, m in enumerate(CLASSES)}
     ytr, yva = tr.model.map(idx).to_numpy(), va.model.map(idx).to_numpy()
 
     tok = AutoTokenizer.from_pretrained(CKPT, revision=REV)
-    net = Net().to(dev)
+    net = Net(args.center).to(dev)
+    ptr = tr.prompt_id.to_numpy()
+    make_batches = (lambda r: question_batches(ptr, r)) if qb else (lambda r: pk_batches(ytr, args.p, args.k, r))
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
-    steps = len(pk_batches(ytr, args.p, args.k, np.random.default_rng(0))) * args.epochs
+    steps = len(make_batches(np.random.default_rng(0))) * args.epochs
     sched = get_linear_schedule_with_warmup(opt, int(0.1 * steps), steps)
     scaler = torch.cuda.amp.GradScaler()
     torch.cuda.reset_peak_memory_stats()
@@ -125,7 +155,7 @@ def main():
     for ep in range(1, args.epochs + 1):
         net.train()
         ce_sum = con_sum = 0.0
-        batches = pk_batches(ytr, args.p, args.k, rng)
+        batches = make_batches(rng)
         for b in batches:
             enc = tok(list(tr.text.iloc[b]), truncation=True, max_length=args.max_len, padding=True,
                       return_tensors="pt").to(dev)
@@ -133,14 +163,14 @@ def main():
             with torch.autocast("cuda", dtype=torch.float16):
                 lg, emb = net(enc.input_ids, enc.attention_mask)
             ce = F.cross_entropy(lg.float(), y)
-            con = supcon(emb, y, args.temp)
+            con = torch.zeros((), device=dev) if qb else supcon(emb, y, args.temp)
             loss = ce + args.lam * con  # lam=0 -> plain classifier; con is logged either way
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
             scaler.unscale_(opt); torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             scaler.step(opt); scaler.update(); sched.step()
             ce_sum += ce.item(); con_sum += con.item()
-        P, E = predict(net, tok, va.text.to_numpy(), args, dev)
+        P, E = predict(net, tok, va.text.to_numpy(), args, dev, va.prompt_id.to_numpy() if qb else None)
         s = score(yva, P)
         sil = float(silhouette_score(E, yva, metric="cosine"))
         row = {"epoch": ep, "train_ce": ce_sum / len(batches), "train_supcon": con_sum / len(batches),
@@ -151,7 +181,8 @@ def main():
         log.append(row); print(json.dumps(row), flush=True)
         if best is None or s["model_BA"] > best[0]["model_BA"]:
             # test labels are never read; only probabilities of the val-selected epoch are kept
-            Pt = predict(net, tok, te.text.to_numpy(), args, dev)[0] if args.save_test else None
+            Pt = predict(net, tok, te.text.to_numpy(), args, dev, te.prompt_id.to_numpy() if qb else None)[0] \
+                if args.save_test else None
             best = (s, P, ep, sil, Pt)
             if args.save_model:  # fp16 copy on CPU keeps the best epoch without holding a second GPU model
                 best_state = {k: v.detach().to("cpu", torch.float16) for k, v in net.state_dict().items()}
@@ -169,6 +200,7 @@ def main():
         torch.save(best_state, weights)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     summary = {"run_id": name, "owner": "B", "model": CKPT, "revision": REV, "weights": str(weights) if weights else None, "feature_set": "raw text",
+               "question_centering": "concat [h ; h - question mean]" if args.center else False,
                "preprocessing": f"tokenizer truncation max_len={args.max_len}, mean pooling",
                "params": json.dumps({k: v for k, v in vars(args).items() if k not in ("seed", "save_model")}), "seed": args.seed,
                "split": "val", "n_samples": len(yva), "model_BA": s["model_BA"], "accuracy": s["model_Acc"],
@@ -192,5 +224,7 @@ if __name__ == "__main__":
     y0 = torch.tensor([0, 0, 1, 1])
     good, bad = torch.tensor([[1., 0], [1, 0], [0, 1], [0, 1]]), torch.tensor([[1., 0], [0, 1], [1, 0], [0, 1]])
     assert supcon(good, y0, 0.1) < supcon(bad, y0, 0.1)  # same-class aligned beats same-class orthogonal
+    qb0 = question_batches(np.array(["a", "b", "a", "c", "b"]), np.random.default_rng(0))
+    assert sorted(sorted(g.tolist()) for g in qb0) == [[0, 2], [1, 4], [3]]  # each batch = exactly one question
     assert all(len(set(np.array([0, 0, 1, 1, 2, 2])[b])) == 2 for b in pk_batches(np.array([0, 0, 1, 1, 2, 2]), 2, 2, np.random.default_rng(0)))
     main()

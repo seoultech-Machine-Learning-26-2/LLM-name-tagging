@@ -1,6 +1,8 @@
 """B: Linear SVM experiments (B-1 ~ B-4). Run from repo root: python -m experiments.B_svm
 
 Train only on train, compare on val. Test is never opened here.
+    python -m experiments.B_svm --center   # question centering (team decision 2026-11-18, Q-10): val grid,
+                                           # then test probabilities (never scored) for the val-best configs
 """
 import json
 import platform
@@ -16,6 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sklearn
+from scipy import sparse
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.dummy import DummyClassifier
 from sklearn.exceptions import ConvergenceWarning
@@ -50,8 +54,27 @@ def make_feat(kind):
     return FeatureUnion([("style", style), ("tfidf", make_extractor("tfidf"))])
 
 
-def make_pipe(kind, C):
-    feat = make_feat(kind)
+class GroupCenter(BaseEstimator, TransformerMixin):
+    """Input: DataFrame with `text`, `prompt_id`. Extract features (fit on train only), then subtract the mean of
+    the same-question rows (no labels used). mode="center": X - mean, "concat": [X, X - mean].
+    Means come from the rows passed in, so each split (and each calibration fold) uses only its own questions."""
+
+    def __init__(self, feat, mode):
+        self.feat, self.mode = feat, mode
+
+    def fit(self, X, y=None):
+        self.feat.fit(X["text"].to_numpy(), y)
+        return self
+
+    def transform(self, X):
+        F = self.feat.transform(X["text"].to_numpy())
+        F = np.asarray(F.todense() if sparse.issparse(F) else F, dtype=np.float32)
+        C = F - pd.DataFrame(F).groupby(X["prompt_id"].to_numpy()).transform("mean").to_numpy(np.float32)
+        return C if self.mode == "center" else np.hstack([F, C])
+
+
+def make_pipe(kind, C, center=None):
+    feat = make_feat(kind) if center is None else GroupCenter(make_feat(kind), center)
     return Pipeline([("feat", feat), ("svm", LinearSVC(C=C, random_state=SEED, max_iter=MAX_ITER))])
 
 
@@ -60,13 +83,13 @@ def raw_metrics(y, pred):
             "macro_f1": f1_score(y, pred, average="macro", labels=range(18), zero_division=0)}
 
 
-def run(kind, C, data):
-    print(f"start {kind} C={C} ({time.strftime('%H:%M:%S')})", flush=True)
+def run(kind, C, data, center=None):
+    print(f"start {kind} {center or ''} C={C} ({time.strftime('%H:%M:%S')})", flush=True)
     (Xtr, ytr, gtr), (Xva, yva) = data["train"], data["val"]
-    name = f"B_svm_{kind}_C{C}"
+    name = f"B_svm_{kind}_C{C}" if center is None else f"B_svm_{kind}_{center}_C{C}"
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", ConvergenceWarning)
-        pipe = make_pipe(kind, C)
+        pipe = make_pipe(kind, C, center)
         t0 = time.perf_counter(); pipe.fit(Xtr, ytr); fit_s = time.perf_counter() - t0
         print(f"  fit {fit_s:.1f}s, now 5-fold calibration", flush=True)
         t0 = time.perf_counter(); dva = pipe.decision_function(Xva); pred_s = time.perf_counter() - t0
@@ -74,14 +97,14 @@ def run(kind, C, data):
         va_raw = raw_metrics(yva, dva.argmax(1))
         # Probabilities: sigmoid calibration, folds grouped by prompt_id; features refit inside each fold.
         folds = list(GroupKFold(n_splits=5).split(Xtr, ytr, gtr))
-        cal = CalibratedClassifierCV(make_pipe(kind, C), method="sigmoid", cv=folds).fit(Xtr, ytr)
+        cal = CalibratedClassifierCV(make_pipe(kind, C, center), method="sigmoid", cv=folds).fit(Xtr, ytr)
         P = cal.predict_proba(Xva)
     converged = not any(issubclass(w.category, ConvergenceWarning) for w in caught)
     assert list(pipe.classes_) == list(range(18)) == list(cal.classes_)
     save_pred(data["val_ids"], P, CLASSES, PREDS / f"val_{name}_seed{SEED}.csv")
     s = score(yva, P)
-    row = {"run_id": name, "owner": "B", "model": "LinearSVC", "feature_set": kind,
-           "preprocessing": PREPROC[kind], "params": json.dumps({"C": C, "max_iter": MAX_ITER}),
+    row = {"run_id": name, "owner": "B", "model": "LinearSVC", "feature_set": kind if center is None else f"{kind}_{center}",
+           "preprocessing": PREPROC[kind] + ("" if center is None else f"; question centering ({center}) per split"), "params": json.dumps({"C": C, "max_iter": MAX_ITER}),
            "seed": SEED, "split": "val", "n_samples": len(yva),
            "model_BA": s["model_BA"], "accuracy": s["model_Acc"], "macro_f1": s["model_F1"],
            "company_BA": s["company_BA"], "company_method": "prob_sum(calibrated)",
@@ -127,9 +150,51 @@ def save_test_preds():
         save_pred(te.id, cal.predict_proba(te.text.to_numpy()), CLASSES, path)
 
 
+CENTER_GRID = [("style", m, C) for m in ("center", "concat") for C in CS] +     [("combined", m, 0.1) for m in ("center", "concat")]
+# shortcut: combined only at C=0.1 (C* of the uncentered runs); dense 30k-60k columns make each calibrated fit
+# slow on Colab CPU. Widen the C grid for combined if there is time.
+
+
+def center_main():
+    """Question-centering runs (Q-10): val grid -> pick val-best per input -> save test probabilities (not scored)."""
+    frames = load_splits("data/split", include_test=True)
+    idx = {m: i for i, m in enumerate(CLASSES)}
+    tr = frames["train"]
+    va = frames["val"].sort_values("id").reset_index(drop=True)
+    te = frames["test"].sort_values("id").reset_index(drop=True).drop(columns="model")  # test labels never kept
+    cols = ["text", "prompt_id"]
+    data = {"train": (tr[cols], tr.model.map(idx).to_numpy(), tr.prompt_id.to_numpy()),
+            "val": (va[cols], va.model.map(idx).to_numpy()), "val_ids": va.id}
+    metrics = OUT / "metrics_center.csv"
+    rows = pd.read_csv(metrics).to_dict("records") if metrics.exists() else []
+    for kind, mode, C in CENTER_GRID:
+        rid = f"B_svm_{kind}_{mode}_C{C}"
+        if any(r["run_id"] == rid for r in rows):
+            print(f"skip {rid} (already in {metrics.name})", flush=True); continue
+        row, _, _ = run(kind, C, data, mode)
+        rows.append(row); pd.DataFrame(rows).to_csv(metrics, index=False)
+        print(f"{rid:34s} valBA(SVM)={row['svm_val_BA']:.3f} calBA={row['model_BA']:.3f} "
+              f"fit={row['fit_seconds']}s conv={row['converged']}", flush=True)
+    # val-best per input by calibrated val model BA; ties -> grid order (smaller C, "center" before "concat")
+    df = pd.DataFrame(rows)
+    folds = list(GroupKFold(n_splits=5).split(tr, data["train"][1], data["train"][2]))
+    for kind in ("style", "combined"):
+        sub = df[df.run_id.str.startswith(f"B_svm_{kind}_c")]
+        best = sub.sort_values("model_BA", ascending=False, kind="stable").iloc[0]
+        mode, C = best.feature_set.split("_")[-1], C_of(best.params)
+        path = PREDS / f"test_B_svm_{kind}_{mode}_C{C}_seed{SEED}.csv"
+        print(f"val-best {kind}: {best.run_id} (calBA {best.model_BA:.3f})", flush=True)
+        if path.exists():
+            print(f"skip {path}", flush=True); continue
+        cal = CalibratedClassifierCV(make_pipe(kind, C, mode), method="sigmoid", cv=folds).fit(tr[cols], data["train"][1])
+        save_pred(te.id, cal.predict_proba(te[cols]), CLASSES, path)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     PREDS.mkdir(exist_ok=True)
+    if "--center" in sys.argv:
+        return center_main()
     if "--test" in sys.argv:
         return save_test_preds()
     frames = load_splits("data/split")
