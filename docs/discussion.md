@@ -138,6 +138,7 @@
   5. 결합 방법: 확률 단순 평균 / 보정 후 평균 / 가중 평균(가중치는 val로만)
 - 답변:
   - C·양서린 (2026-11-18): 1번(C 몫)은 끝냈다. Qwen 개별 모델 val 8개를 `seorin` `preds/`에 올렸다(`463966c`: Q2·Q3 seed 42, V3·Q4 seed 42/43/44). 공통 `evaluate.py`로 다시 채점해 문서 숫자와 같고, 6개 평균 × 0.8 + `val_C_XGB` × 0.2가 `val_C_FINAL`과 일치한다. 이름 짝: `test_C_V3_seed43.csv` ↔ `val_V3_rdrop_seed43.csv`, `test_C_Q2.csv` ↔ `val_Q2_lora_flat_seed42.csv` 식이다. 개별 파일이 모두 있으므로 3번에서 `C_FINAL` 대신 개별 파일만 쓰는 것도 가능하다. 2~5번은 회의에서 정한다.
+  - C·양서린 (2026-11-18, 회의 후): 결정 4(seed별 파일)를 반영했다. XGBoost seed별 val·test 파일 6개(`val_C_XGB_seed42/43/44.csv`, `test_C_XGB_seed42/43/44.csv`)를 `seorin` `preds/`에 올렸다(`c262b0d`). 학습 설정은 바꾸지 않았고, Kaggle(GPU T4 세션)에서 다시 실행한 노트북 원본은 [`c5bb47c`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/c5bb47c/notebooks/kaggle_session_2026-11-18_xgb_seed/llmnametagging.ipynb)이다. 트리 수 627/621/538이 기존과 같고, 세 파일의 평균이 기존 `val_C_XGB`·`test_C_XGB`와 일치한다(최대 차이 3e-8). seed별 val BA는 0.3788/0.3788/0.3813(평균 0.380 ± 0.001)이다. 가속기를 끈 CPU 전용 세션에서는 트리 수가 660/629로 달라져 그 실행은 쓰지 않았다(같은 노트북 셀 10). 결정 3에 따라 Qwen은 V3·Q4 seed 42/43/44 개별 파일 6개를 쓴다.
 - 결정: 1, 5, 6, 7은 앙상블 시점에 결정해도 되는 것이므로 지금 생각하지 않는다. 2는 4명이 모두 11/20까지 질문 중심화를 진행해 github에 올리기로 했고, 3은 C가 Qwen 6개 파일로 고정하기로 한다. 4는 B에 맞게 A, C, D가 seed별로 측정한다. 결정하지 않은 항목은 11/25 중간 발표가 끝난 뒤, 팀 앙상블 전에 정한다(2026-11-18 회의, 정혜원 전달).
 
 ## 결정된 항목
