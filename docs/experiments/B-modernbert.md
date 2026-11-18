@@ -11,7 +11,7 @@
 | 실행 위치 | Google Colab, Tesla T4 (15GB) |
 | Python / PyTorch / transformers | 3.13.16 / 2.14.1+cu130 / 5.23.0 |
 | NumPy / pandas / scikit-learn | 2.4.6 / 2.2.3 / 1.6.1 |
-| 체크포인트 | `answerdotai/ModernBERT-base` (Hugging Face, revision 고정 안 함) |
+| 체크포인트 | `answerdotai/ModernBERT-base` revision `8949b909ec900327062f0ebf497f51aef5e6f0c8` (실행 당시 코드는 revision을 지정하지 않았으나, 이 revision이 2025-01-15 이후 Hub의 최신이라 같은 것을 받았다. `2658da7`부터 코드에 고정) |
 | 코드 커밋 | 4에폭: `hyewon` [`86e3aff`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/86e3aff) (결과 커밋 `2ed97fc`) · 8에폭·test: [`109f514`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/109f514) (결과 커밋 `1c5dc2a`, 채점 `cd6d620`) |
 | 실행 명령 | `python -m experiments.B_modernbert --lam 0` / `--lam 0.1` ([Colab 노트북](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/notebooks/B_colab.ipynb) 4번) |
 
@@ -136,7 +136,7 @@ val 평균 ± 표준편차를 포함한 표: [`template_*.csv`](https://github.c
 - ModernBERT 기본형은 4 epoch(약 3.5분)에 val BA 0.293, 대조 학습은 0.311로 수치상 높지만 **질문 단위 구간상 차이가 불확실**하다. 임베딩 분리도(Silhouette)는 나아지지 않았으므로 "대조 학습이 작성자 표현을 개선했다"고 쓰지 않는다.
 - 8에폭 seed 3개로 다시 보면 두 조건은 val(0.341 vs 0.340)과 test(0.348 vs 0.344) 모두 거의 같다. **이 설정(λ=0.1, τ=0.1)의 SupCon은 일반화 성능을 올리지 않았다.**
 - **test(1회):** 기본형 모델 BA 0.348, 개발사 BA 0.578. 대조 0.344 / 0.569. SVM 결합(0.314 / 0.438)보다 개발사 수준에서 확실히 낫고, 18개 모델 수준에서는 높지만 구간상 확정할 수 없다.
-- 한계: seed 3개, 8에폭에서도 대부분 마지막 epoch이 최고(학습 부족 가능), λ·τ·lr 미튜닝, 확률 보정 안 함(ECE 높음), 체크포인트 revision 미고정, 512토큰 초과 부분은 잘림, 모델 가중치는 저장하지 않음.
+- 한계: seed 3개, 8에폭에서도 대부분 마지막 epoch이 최고(학습 부족 가능), λ·τ·lr 미튜닝, 확률 보정 안 함(ECE 높음), 512토큰 초과 부분은 잘림, 모델 가중치는 저장하지 않음.
 
 ## 9. 코드·산출물
 
@@ -147,4 +147,4 @@ val 평균 ± 표준편차를 포함한 표: [`template_*.csv`](https://github.c
 | epoch 로그·요약 | [`results/course/B/modernbert/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/results/course/B/modernbert) (`epoch_log.csv`, `summary.json`) |
 | test 채점 코드·결과 | [`experiments/B_test_eval.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/experiments/B_test_eval.py), [`results/course/B/test/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/results/course/B/test) |
 | val·test 예측 (C `save_pred` 형식) | [`preds/val_B_modernbert_lam{0,0.1}_seed42.csv`, `{val,test}_B_modernbert_lam{0,0.1}_ep8_seed{42,43,44}.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/preds) |
-| 체크포인트 | 저장 안 함 — Colab T4에서 실행당 약 4분이라 같은 명령으로 재학습 (GPU 비결정성으로 숫자가 조금 다를 수 있음) |
+| 모델 가중치 | 보고한 실행들은 저장하지 않았다. 같은 명령으로 재학습할 수 있다(실행당 4에폭 약 4분, 8에폭 약 8분, GPU 비결정성으로 숫자가 조금 다를 수 있음). `2658da7`부터 `--save_model <Drive 폴더>`를 주면 val로 고른 epoch 가중치를 `<폴더>/<run>_seed<seed>.pt`(fp16, 약 300MB)로 저장한다. 복원: `net = Net(); net.load_state_dict({k: v.float() for k, v in torch.load(경로).items()})` |
