@@ -1,0 +1,32 @@
+{
+  "seed": 42,
+  "C_grid": [
+    0.1,
+    1,
+    10
+  ],
+  "C_star": 0.1,
+  "constant_style_features_train": [
+    "line_count",
+    "blank_line_ratio",
+    "heading_per_100_lines",
+    "bullet_per_100_lines",
+    "numbered_per_100_lines",
+    "code_fence_per_100_lines",
+    "bold_per_100_chars",
+    "link_per_100_chars",
+    "backtick_per_100_chars"
+  ],
+  "calibration": "CalibratedClassifierCV(sigmoid, GroupKFold(5) by prompt_id on train, ensemble=True)",
+  "selection": "C* = best LinearSVC val model BA (argmax of decision_function) on style input",
+  "commit": "86e3aff",
+  "versions": {
+    "python": "3.13.16",
+    "numpy": "2.4.6",
+    "pandas": "2.2.3",
+    "scikit-learn": "1.6.1"
+  },
+  "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "test_opened": false
+}
