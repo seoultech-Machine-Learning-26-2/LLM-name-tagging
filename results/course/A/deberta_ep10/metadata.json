@@ -1,0 +1,57 @@
+{
+  "model": "microsoft/deberta-v3-base",
+  "lambdas": [
+    0.0,
+    0.1
+  ],
+  "seeds": [
+    42
+  ],
+  "n_topics_train": 105,
+  "truncated_at_max_len": {
+    "train": 0,
+    "val": 0
+  },
+  "args": {
+    "model": "microsoft/deberta-v3-base",
+    "lambdas": "[0.0, 0.1]",
+    "seeds": "[42]",
+    "epochs": "10",
+    "patience": "3",
+    "batch_size": "16",
+    "lr": "2e-05",
+    "head_lr": "0.001",
+    "dropout": "0.1",
+    "max_len": "512",
+    "amp": "True",
+    "data_dir": "/kaggle/working/LLM-name-tagging/data/split",
+    "out_dir": "results/course/A/deberta_ep10",
+    "pred_dir": "preds/deberta_ep10",
+    "ckpt_dir": "artifacts/ckpt/A_deberta_ep10",
+    "save_ckpt": "True",
+    "final": "False",
+    "force": "False",
+    "commit": "None",
+    "debug_rows": "0"
+  },
+  "environment": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.20.2",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "cuda": "13.0",
+    "device": "cuda",
+    "gpu": "Tesla T4"
+  },
+  "code_commit": "cf5db0a",
+  "test_opened": false,
+  "notes": [
+    "주제 라벨은 train prompt_id 대용이며 실제 의미 주제와 다름",
+    "probe_train: train 응답을 질문별 절반으로 나눠 로지스틱 회귀로 측정 (주 진단)",
+    "probe_val: val 응답 안에서만 같은 방식으로 측정 (참고, train 주제 분류기 미사용)",
+    "우연 수준: 주제 train 1/105, val 1/22, 작성자 1/18"
+  ]
+}
