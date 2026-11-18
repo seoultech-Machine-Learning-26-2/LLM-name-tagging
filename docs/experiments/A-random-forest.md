@@ -1,7 +1,7 @@
 # A: Random Forest 실험 결과
 
 > 담당: 좌은진(A) · 작성일: 2026-11-17 · 수정일: 2026-11-18 · 정리: A/Claude · 상태: val 완료, test 예측 미제출·채점 보류(팀 일괄 채점 대기)
-> 미완료: Kaggle 원본 노트북 업로드, test 예측 파일(`test_nolabel.csv`), 데이터 출처(A-1), C의 XGBoost와 같은 입력 비교
+> 미완료: test 예측 파일(`test_nolabel.csv`), 데이터 출처(A-1), C의 XGBoost와 같은 입력 비교
 
 ## 1. 실험 개요
 
@@ -14,7 +14,7 @@
 | 실험 모델 | `RandomForestClassifier` |
 | 모델 구분 | 고전 ML |
 | 실험 날짜 | 2026-11-18 (2026-11-17 실행과 val 결과 동일) |
-| 실험 환경 | Kaggle Notebook, `eunjin` 브랜치 코드 커밋 `a4a205a` (RF 코드는 `b416867`과 동일) |
+| 실험 환경 | Kaggle Notebook (`notebooks/A_rf_kaggle.ipynb`), `eunjin` 브랜치 코드 커밋 `a4a205a` (RF 코드는 `b416867`과 동일) |
 
 ## 2. 실험 설정
 
@@ -200,7 +200,7 @@
 | 산출물 | 저장 경로 |
 | --- | --- |
 | 학습 코드 | `experiments/A_random_forest.py` (`eunjin` 브랜치) |
-| Kaggle 노트북 | 원본 노트북 업로드 대기 |
+| Kaggle 노트북 | `notebooks/A_rf_kaggle.ipynb` (`eunjin` 브랜치, 11/18 실행에 사용) |
 | 모델 체크포인트 | 저장하지 않음 (재실행 약 30초) |
 | 평가 결과 CSV | `results/course/A/random_forest/val_results.csv`, `val_summary.csv` |
 | 추가 분석 CSV | `feature_importance.csv`, `val_errors_seed42.csv` |
@@ -217,7 +217,6 @@
 - 최종 설정 d10은 바꾸지 않는다.
 
 **남은 작업**
-- Kaggle에서 실행한 원본 노트북(.ipynb) 업로드
 - test 예측 파일: C의 정답 없는 `test_nolabel.csv`(`seorin` 브랜치)로 d10 예측만 만들어 12/14까지 `preds/`에 올린다. 현재 코드의 `--final`은 정답이 있는 test를 읽어 채점까지 하므로, 예측만 저장하는 방법은 정한 뒤 진행한다.
 - C의 XGBoost와 같은 문체 입력 비교 (배깅 vs 부스팅)
 - 데이터 출처·사용 조건 기록 (A-1)
