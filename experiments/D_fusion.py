@@ -1,8 +1,4 @@
-"""D: Sentence-BERT 문체 융합 (D-3, D-4). python -m experiments.D_fusion
-
-의미만 / 문체만 / 융합 세 분기를 같은 분할·seed·학습 예산으로 비교한다.
-임베딩은 동결하고 MLP만 학습한다. test는 --final 로만 열린다.
-"""
+"""D: Sentence-BERT 문체 융합 (D-3, D-4). 임베딩 동결, test는 --final 로만."""
 import argparse
 import json
 import platform
@@ -49,7 +45,10 @@ KO = setup_font()
 T = (lambda ko, en: ko if KO else en)
 
 SEEDS = [42, 43, 44]
-BRANCHES = ["semantic", "style", "fusion"]
+BASE_BRANCHES = ["semantic", "style", "fusion"]
+CENTERING = ["raw", "centered"]
+BRANCHES = [b if m == "raw" else f"{b}_centered"
+            for b in BASE_BRANCHES for m in CENTERING]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 HP = {"hidden": 256, "dropout": 0.3, "lr": 1e-3, "weight_decay": 1e-4,
@@ -75,7 +74,6 @@ def make_labels(df):
 
 
 def encode(frames, encoder_name, cache_dir, batch_size=64):
-    """Sentence-BERT 임베딩. 동결 상태로 추출해 .npy에 캐시한다."""
     from sentence_transformers import SentenceTransformer
     cache_dir.mkdir(parents=True, exist_ok=True)
     tag = encoder_name.replace("/", "_")
@@ -102,8 +100,16 @@ def encode(frames, encoder_name, cache_dir, batch_size=64):
     return out
 
 
+def center_by_prompt(X, pid):
+    X = np.asarray(X, dtype=np.float64)
+    out = X.copy()
+    for pr in np.unique(pid):
+        m = pid == pr
+        out[m] -= X[m].mean(0)
+    return out
+
+
 def build_inputs(frames, emb):
-    """세 분기의 입력 행렬. 스케일러는 train에만 fit 한다."""
     style_pipe = Pipeline([("raw", StylometricTransformer()), ("scale", StandardScaler())])
     style = {"train": style_pipe.fit_transform(frames["train"].text)}
     for s in frames:
@@ -113,8 +119,13 @@ def build_inputs(frames, emb):
     emb_scaler = StandardScaler().fit(emb["train"])
     sem = {s: emb_scaler.transform(emb[s]) for s in emb}
 
-    X = {"semantic": sem, "style": style,
-         "fusion": {s: np.hstack([sem[s], style[s]]) for s in emb}}
+    base = {"semantic": sem, "style": style,
+            "fusion": {s: np.hstack([sem[s], style[s]]) for s in emb}}
+    pid = {s: frames[s].prompt_id.to_numpy() for s in frames}
+    X = {}
+    for b, d in base.items():
+        X[b] = d
+        X[f"{b}_centered"] = {s: center_by_prompt(v, pid[s]) for s, v in d.items()}
     return {b: {s: np.asarray(v, dtype=np.float32) for s, v in d.items()} for b, d in X.items()}
 
 
@@ -125,7 +136,6 @@ def set_seed(seed):
 
 
 def train_branch(Xb, y, seed, hp, log=None):
-    """train으로 학습하고 val BA가 가장 높은 epoch의 가중치를 되돌린다."""
     set_seed(seed)
     Xtr = torch.tensor(Xb["train"])
     ytr = torch.tensor(y["train"], dtype=torch.long)
@@ -192,8 +202,11 @@ def run_branch(branch, X, y, seed, hp, encoder, split="val", curve=None):
           f"val_BA {s['model_BA']:.4f}  {fit_s:5.1f}s", flush=True)
     row = {
         "run_id": f"D_fusion_{branch}_seed{seed}", "owner": "D", "model": "SBERT+MLP",
-        "config": branch, "feature_set": branch, "encoder": encoder,
-        "preprocessing": "임베딩 동결 + StandardScaler(train fit)",
+        "config": branch, "feature_set": branch.replace("_centered", ""),
+        "centering": "centered" if branch.endswith("_centered") else "raw",
+        "encoder": encoder,
+        "preprocessing": "임베딩 동결 + StandardScaler(train fit)"
+                         + (" + 질문 중심화" if branch.endswith("_centered") else ""),
         "params": json.dumps(hp), "seed": seed, "split": split,
         "n_samples": len(y[split]), "n_features": X[branch][split].shape[1],
         "n_trainable_params": n_params(model), "best_epoch": best_epoch,
@@ -234,6 +247,35 @@ def per_class_table(y_true, P):
                      "precision": round(float((y_true[pred == i] == i).mean()), 4)
                      if (pred == i).any() else np.nan})
     return pd.DataFrame(recs).sort_values("recall")
+
+
+def company_table(y_true, P):
+    pred = P.argmax(1)
+    predc = ev.to_company(P).argmax(1)
+    yc = ev.M2C[y_true]
+    recs = []
+    for c in range(6):
+        m = yc == c
+        k = int((ev.M2C == c).sum())
+        sm = m & (ev.M2C[pred] == c) & ev.MULTI[yc]
+        recs.append({"company": ev.COMPANIES[c], "n_models": k, "n_val": int(m.sum()),
+                     "company_recall": round(float((predc[m] == c).mean()), 4),
+                     "company_chance": round(1 / 6, 4),
+                     "within_company_n": int(sm.sum()),
+                     "within_company_acc": round(float((pred[sm] == y_true[sm]).mean()), 4)
+                     if sm.any() else np.nan,
+                     "within_company_chance": round(1 / k, 4) if k > 1 else np.nan})
+    df = pd.DataFrame(recs).sort_values("company_recall", ascending=False)
+    multi = df[df.n_models > 1]
+    df = pd.concat([df, pd.DataFrame([
+        {"company": "ALL(6)", "company_recall": round(df.company_recall.mean(), 4),
+         "company_chance": round(1 / 6, 4)},
+        {"company": "MULTI_ONLY(4)", "company_recall": round(multi.company_recall.mean(), 4),
+         "company_chance": round(1 / len(multi), 4),
+         "within_company_acc": round(
+             float(np.average(multi.within_company_acc, weights=multi.within_company_n)), 4)},
+    ])], ignore_index=True)
+    return df
 
 
 def sibling_table(y_true, P):
@@ -280,14 +322,14 @@ def fig_confusion(y_true, P, out, name):
 
 
 def fig_branches(res, curves, out):
-    fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.6))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4.8))
     g = res.groupby("config")[["train_model_BA", "model_BA"]].agg(["mean", "std"])
     g = g.reindex(BRANCHES)
     x = np.arange(len(g))
     axes[0].bar(x - .2, g[("train_model_BA", "mean")], .4, label="train BA")
     axes[0].bar(x + .2, g[("model_BA", "mean")], .4,
                 yerr=g[("model_BA", "std")].fillna(0), capsize=4, label="val BA")
-    axes[0].set_xticks(x, BRANCHES)
+    axes[0].set_xticks(x, BRANCHES, rotation=20, ha="right", fontsize=8)
     axes[0].set(ylabel="BA", title=T("D-4: 분기별 (seed 3개 평균)",
                                      "D-4: branches (mean of 3 seeds)"))
     axes[0].legend()
@@ -295,6 +337,8 @@ def fig_branches(res, curves, out):
 
     for b in BRANCHES:
         c = curves[curves.config == b]
+        if c.empty:
+            continue
         m = c.groupby("epoch").val_BA.mean()
         axes[1].plot(m.index, m.values, label=b)
     axes[1].set(xlabel="epoch", ylabel="val BA",
@@ -307,7 +351,7 @@ def fig_branches(res, curves, out):
 
 
 def compare_val(args, frames, y, X, out, commit):
-    rows, curves, best_P = [], [], None
+    rows, curves, Ps = [], [], {}
     for branch in BRANCHES:
         print(f"\n[{branch}] 입력 {X[branch]['train'].shape[1]}차원")
         for seed in SEEDS:
@@ -318,8 +362,7 @@ def compare_val(args, frames, y, X, out, commit):
             if seed == 42:
                 ev.save_pred(frames["val"].id, P, ev.CLASSES,
                              args.pred_dir / f"val_D_fusion_{branch}_seed42.csv")
-                if branch == "fusion":
-                    best_P = P
+                Ps[branch] = P
 
     res = pd.DataFrame(rows).assign(code_commit=commit)
     res.to_csv(out / "val_results.csv", index=False)
@@ -332,11 +375,16 @@ def compare_val(args, frames, y, X, out, commit):
                .agg(["mean", "std"]).round(4).reindex(BRANCHES))
     summary.to_csv(out / "val_summary.csv")
 
+    best = res.groupby("config").model_BA.mean().idxmax()
+    best_P = Ps[best]
+
     calibration_table(y["val"], best_P).to_csv(out / "val_calibration.csv", index=False)
     per_class_table(y["val"], best_P).to_csv(out / "val_per_class.csv", index=False)
     sibling_table(y["val"], best_P).to_csv(out / "val_sibling_errors.csv", index=False)
+    company_table(y["val"], best_P).to_csv(
+        out / "val_company_breakdown.csv", index=False)
     error_table(frames, y, best_P).to_csv(out / "val_errors_seed42.csv", index=False)
-    fig_confusion(y["val"], best_P, out, "fusion")
+    fig_confusion(y["val"], best_P, out, best)
     fig_branches(res, curves, out)
 
     print("\n=== 분기별 요약 (seed 3개) ===")
@@ -344,7 +392,6 @@ def compare_val(args, frames, y, X, out, commit):
                    ("macro_f1", "mean"), ("company_BA", "mean"),
                    ("n_trainable_params", "mean")]]
           .to_string(float_format=lambda v: f"{v:.4f}"))
-    best = res.groupby("config").model_BA.mean().idxmax()
     print(f"\n-> 최고 분기: {best}")
     return res, {"best_branch": best}
 
@@ -412,7 +459,7 @@ def main():
     X = build_inputs(frames, emb)
     print("입력 차원:", {b: X[b]["train"].shape[1] for b in BRANCHES})
 
-    meta = {"env": env, "seeds": SEEDS, "branches": BRANCHES, "hp": HP,
+    meta = {"env": env, "seeds": SEEDS, "branches": BRANCHES, "centering": CENTERING, "hp": HP,
             "input_dims": {b: int(X[b]["train"].shape[1]) for b in BRANCHES}}
     if open_test:
         final_test(args, frames, y, X, args.out_dir, commit, args.final)
