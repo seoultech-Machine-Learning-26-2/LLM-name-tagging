@@ -1,7 +1,12 @@
-# [C] 실험 결과: XGBoost + Qwen3.5-0.8B LoRA
+# C · 실험 요약: XGBoost + Qwen3.5-0.8B LoRA
 
-> 담당: 서린 양(C) · 질문: 부스팅과 추가 학습(LoRA)이 비용 대비 어떤 효과를 내는가?
-> 모든 점수는 val 기준이며, test는 12월 팀 통합 때 1회 채점한다.
+> 담당: 양서린(C) · 상태: **val 실험 완료 / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-18 · 정리: C/Claude
+> 질문: 부스팅과 추가 학습(LoRA)이 비용 대비 어떤 효과를 내는가? · 모든 점수는 val 기준이며, test는 12월 팀 통합 때 1회 채점한다.
+
+상세 결과(결과 템플릿 형식): [C · XGBoost](C-xgboost.md) · [C · Qwen3.5-0.8B + LoRA](C-qwen-lora.md)
+코드·예측: `seorin` 브랜치 [`0434772`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/0434772/experiments)(코드), [`5869bb7`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds)(예측)
+
+> **질문 묶음 이용 표시:** ①·②·③의 최종 설정은 **질문 중심화**(같은 `prompt_id` 응답 18개의 평균을 빼기)를 써서, 예측할 때 같은 질문의 다른 응답을 함께 쓴다. 응답 하나만 보는 예측의 최고값은 XGBoost 0.258, Qwen LoRA(Q2) 0.328이다. **배정 BA**는 헝가리안 배정 후처리 결과라 주 지표에 넣지 않는다([다음 작업 계획](../next-tasks-A-B-C-D.md) 4절 9번).
 
 ## 0. 한눈에 보기
 
@@ -14,7 +19,8 @@
 | ③ 최종 | ② × 0.8 + ① × 0.2 | **0.551** | 0.672 | 0.706 | 0.635 | ① + ② |
 
 - 순수 BA: 응답 하나만 보고 작성 모델을 예측한 Balanced Accuracy (주 지표)
-- 배정 BA: 같은 질문의 응답 18개에 모델을 하나씩 배정(헝가리안)한 결과 (보조 지표, 별도 기록)
+- 배정 BA: 같은 질문의 응답 18개에 모델을 하나씩 배정(헝가리안)한 결과 (후처리, 보조 지표, 별도 기록)
+- 응답 단독 예측(질문 묶음 미사용): XGBoost 0.258 ± 0.001, Qwen LoRA(Q2) 0.328
 - 회사 BA: 18개 확률을 개발사 6개로 합산한 뒤의 BA
 - 형제 정확도: 1위 모델의 개발사를 맞힌 응답 중 모델까지 맞힌 비율 (모델 1개인 개발사 제외)
 
@@ -115,7 +121,7 @@ seed 3개 평균에서는 Q4가 V3보다 +1.9%p 높아 채택 기준을 넘었�
 
 | 파일 | 내용 |
 | --- | --- |
-| `val_C_FINAL.csv`, `test_C_FINAL.csv` | 최종 앙상블 예측 (팀 앙상블용) |
+| `seorin` `preds/val_C_FINAL.csv`, `preds/test_C_FINAL.csv` | 최종 앙상블 예측 (팀 앙상블용) |
 | `val_C_XGB.csv`, `test_C_XGB.csv` | XGBoost 3 seed 예측 |
 | `test_C_Q2.csv` ~ `test_C_Q4_seed44.csv` | Qwen 개별 모델 test 예측 (8개) |
 | `test_nolabel.csv` | 정답 열을 제거한 test (팀원 예측용) |
@@ -125,4 +131,6 @@ seed 3개 평균에서는 Q4가 V3보다 +1.9%p 높아 채택 기준을 넘었�
 ## 6. 실행 환경
 
 - 학습: Colab T4(seed 42) → Kaggle T4(seed 43·44), 1회 학습 약 1시간 10분, 최대 메모리 5.4GB
-- 라이브러리 버전: [확인 필요 — transformers, peft, torch, xgboost, scikit-learn]
+- XGBoost 탐색: Linux CPU, Python 3.13.18, scikit-learn 1.9.1, xgboost 3.4.1 (상세는 [C · XGBoost](C-xgboost.md) 1절)
+- Kaggle 라이브러리 버전: [확인 필요 — transformers, peft, torch, xgboost, scikit-learn]
+- 모델 체크포인트: 깃허브 미포함. 저장 위치·복원 방법은 [C · Qwen LoRA](C-qwen-lora.md) 7절

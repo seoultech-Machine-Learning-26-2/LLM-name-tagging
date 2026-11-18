@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | A · 좌은진 | 본인이 정한 이름 (미확인) | Random Forest / DeBERTa + 주제 적대 학습 |
 | B · 정혜원 | `hyewon` | Linear SVM / ModernBERT + 대조 학습 |
-| C · 양서린 | 본인이 정한 이름 (미확인) | XGBoost / Qwen 0.8B + LoRA (2B 선택) |
+| C · 양서린 | `seorin` | XGBoost / Qwen 0.8B + LoRA (2B 선택) |
 | D · 원하람 | 본인이 정한 이름 (미확인) | Logistic Regression / Sentence-BERT + 문체 융합 |
 
 - 새 역할 브랜치는 최신 main에서 만든다. 이미 담당자와 합의해 사용 중인 역할 브랜치가 있으면 그 이름을 유지해도 되며 사용자에게 알려 준다. 다른 역할 브랜치에 직접 커밋하지 않는다.

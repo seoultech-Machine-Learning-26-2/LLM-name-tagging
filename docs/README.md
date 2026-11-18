@@ -26,6 +26,7 @@
 - [개인 실험 결과 템플릿](experiment-result-template.md): 새 실험 보고서를 만들 때 복사한다. 미실행 결과는 빈칸 또는 `미측정`으로 둔다.
 - [질문함·회의 안건](discussion.md): 팀원에게 할 질문·제안을 적고 결정 결과를 기록한다.
 - B 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [Linear SVM](experiments/B-svm.md) · [ModernBERT + 대조 학습](experiments/B-modernbert.md)
+- C 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [요약](experiments/C-summary.md) · [XGBoost](experiments/C-xgboost.md) · [Qwen3.5-0.8B + LoRA](experiments/C-qwen-lora.md)
 
 ## 문서 갱신 방법
 
