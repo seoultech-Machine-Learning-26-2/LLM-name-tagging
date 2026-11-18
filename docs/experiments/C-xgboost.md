@@ -18,7 +18,7 @@
 | 모델 구분 | 고전 ML |
 | 실험 날짜 | 2026-11-15 ~ 2026-11-16 (탐색), 2026-11-18 (최종 재학습·예측) |
 | 실험 환경 | CPU, `tree_method=hist` |
-| 코드 | `seorin` [`02715c9`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/02715c9/experiments/run_xgb_official.py) `experiments/run_xgb_official.py` (탐색, 실행한 원본 그대로: 평가 코드를 `official_eval.py`(= `eval/evaluate.py` 사본), 데이터를 개인 업로드 경로로 읽음) · 최종 재학습·test 예측은 Kaggle 앙상블 노트북 셀 2 (Qwen 학습·앙상블·test 예측 노트북 원본와 함께 추가 예정) |
+| 코드 | `seorin` [`02715c9`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/02715c9/experiments/run_xgb_official.py) `experiments/run_xgb_official.py` (탐색, 실행한 원본 그대로: 평가 코드를 `official_eval.py`(= `eval/evaluate.py` 사본), 데이터를 개인 업로드 경로로 읽음) · 최종 재학습·test 예측은 Kaggle 앙상블 노트북 셀 2 (Qwen 학습·앙상블·test 예측 노트북 원본과 함께 추가 예정) |
 | 실행 명령 | `python run_xgb_official.py` (원본은 `official_eval.py`·`features/`와 같은 폴더, 데이터 경로는 실행 환경에 맞게 바꿔야 함). 2026-11-18 경로만 저장소 기준으로 바꿔 다시 실행했을 때 아래 표와 같은 값이 나왔다 |
 
 ## 2. 실험 설정
