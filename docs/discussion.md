@@ -135,6 +135,7 @@
   4. seed 저장 방식(seed별 파일 vs 평균 파일) 통일
   5. 결합 방법: 확률 단순 평균 / 보정 후 평균 / 가중 평균(가중치는 val로만)
 - 답변:
+  - C·양서린 (2026-11-18): 1번(C 몫)은 끝냈다. Qwen 개별 모델 val 8개를 `seorin` `preds/`에 올렸다(`463966c`: Q2·Q3 seed 42, V3·Q4 seed 42/43/44). 공통 `evaluate.py`로 다시 채점해 문서 숫자와 같고, 6개 평균 × 0.8 + `val_C_XGB` × 0.2가 `val_C_FINAL`과 일치한다. 이름 짝: `test_C_V3_seed43.csv` ↔ `val_V3_rdrop_seed43.csv`, `test_C_Q2.csv` ↔ `val_Q2_lora_flat_seed42.csv` 식이다. 3번은 개별 파일로 앙상블하면 XGBoost 중복이 없으므로, `C_FINAL`은 C 개인 결과로만 쓰고 팀 앙상블에는 개별 파일(XGB 1개 + Qwen 개별)을 쓰는 안에 찬성한다. 2·4·5번은 회의에서 정한다.
 - 결정:
 
 ## 결정된 항목
