@@ -5,7 +5,6 @@ Train only on train, compare on val. Test is never opened here.
 import json
 import platform
 import subprocess
-import sys
 import time
 import warnings
 from pathlib import Path
@@ -126,36 +125,40 @@ def main():
     constant = S.columns[S.nunique() == 1].tolist()
     print(f"[B-1] style features={S.shape[1]}, constant on train={len(constant)}: {constant}", flush=True)
 
-    rows, fitted = [], {}
-    if "--resume" in sys.argv:  # grid already saved metrics.csv; redo only the analysis below
-        df = pd.read_csv(OUT / "metrics.csv")
-        return analyze(df, fitted, data, va, constant)
-    # Minimum baseline: class prior
-    dummy = DummyClassifier(strategy="prior").fit(data["train"][0], data["train"][1])
-    Pd = dummy.predict_proba(data["val"][0]); sd = score(yva, Pd)
-    rows.append({"run_id": "B_dummy_prior", "owner": "B", "model": "DummyClassifier(prior)", "feature_set": "none",
-                 "preprocessing": "none", "params": "{}", "seed": SEED, "split": "val", "n_samples": len(yva),
-                 "model_BA": sd["model_BA"], "accuracy": sd["model_Acc"], "macro_f1": sd["model_F1"],
-                 "company_BA": sd["company_BA"], "company_method": "prob_sum", "code_commit": COMMIT,
-                 **{f"cal_{k}": v for k, v in sd.items()}})
+    # Resumable: every finished config is saved at once, and a rerun skips run_ids already in metrics.csv.
+    metrics = OUT / "metrics.csv"
+    rows, fitted = (pd.read_csv(metrics).to_dict("records") if metrics.exists() else []), {}
+    done = lambda rid: any(r["run_id"] == rid for r in rows)
+    save = lambda: pd.DataFrame(rows).to_csv(metrics, index=False)
+    if not done("B_dummy_prior"):  # minimum baseline: class prior
+        dummy = DummyClassifier(strategy="prior").fit(data["train"][0], data["train"][1])
+        sd = score(yva, dummy.predict_proba(data["val"][0]))
+        rows.append({"run_id": "B_dummy_prior", "owner": "B", "model": "DummyClassifier(prior)", "feature_set": "none",
+                     "preprocessing": "none", "params": "{}", "seed": SEED, "split": "val", "n_samples": len(yva),
+                     "model_BA": sd["model_BA"], "accuracy": sd["model_Acc"], "macro_f1": sd["model_F1"],
+                     "company_BA": sd["company_BA"], "company_method": "prob_sum", "code_commit": COMMIT,
+                     **{f"cal_{k}": v for k, v in sd.items()}})
+        save()
 
     # B-2: common style input, C grid; B-3: same grid on tfidf / combined
     for kind in ["style", "tfidf", "combined"]:
         for C in CS:
+            if done(f"B_svm_{kind}_C{C}"):
+                print(f"skip B_svm_{kind}_C{C} (already in metrics.csv)", flush=True)
+                continue
             row, pipe, dva = run(kind, C, data)
-            rows.append(row); fitted[(kind, C)] = (pipe, dva)
+            rows.append(row); fitted[(kind, C)] = (pipe, dva); save()
             print(f"{row['run_id']:28s} trainBA={row['svm_train_BA']:.3f} valBA={row['svm_val_BA']:.3f} "
-                  f"calBA={row['model_BA']:.3f} fit={row['fit_seconds']}s conv={row['converged']}")
+                  f"calBA={row['model_BA']:.3f} fit={row['fit_seconds']}s conv={row['converged']}", flush=True)
     c_star = best_style_c(pd.DataFrame(rows))
-    print(f"[B-2] C* (best style val BA) = {c_star}")
+    print(f"[B-2] C* (best style val BA) = {c_star}", flush=True)
 
     # B-4: scaling evidence at C*
-    row, _, _ = run("style_raw", c_star, data)
-    rows.append(row)
-    print(f"{row['run_id']:28s} trainBA={row['svm_train_BA']:.3f} valBA={row['svm_val_BA']:.3f} conv={row['converged']}")
-    df = pd.DataFrame(rows)
-    df.to_csv(OUT / "metrics.csv", index=False)
-    analyze(df, fitted, data, va, constant)
+    if not done(f"B_svm_style_raw_C{c_star}"):
+        row, _, _ = run("style_raw", c_star, data)
+        rows.append(row); save()
+        print(f"{row['run_id']:28s} trainBA={row['svm_train_BA']:.3f} valBA={row['svm_val_BA']:.3f} conv={row['converged']}")
+    analyze(pd.DataFrame(rows), fitted, data, va, constant)
 
 
 def C_of(params):
