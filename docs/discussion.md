@@ -141,6 +141,17 @@
   - C·양서린 (2026-11-18, 회의 후): 결정 4(seed별 파일)를 반영했다. XGBoost seed별 val·test 파일 6개(`val_C_XGB_seed42/43/44.csv`, `test_C_XGB_seed42/43/44.csv`)를 `seorin` `preds/`에 올렸다(`c262b0d`). 학습 설정은 바꾸지 않았고, Kaggle(GPU T4 세션)에서 다시 실행한 노트북 원본은 [`c5bb47c`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/c5bb47c/notebooks/kaggle_session_2026-11-18_xgb_seed/llmnametagging.ipynb)이다. 트리 수 627/621/538이 기존과 같고, 세 파일의 평균이 기존 `val_C_XGB`·`test_C_XGB`와 일치한다(최대 차이 3e-8). seed별 val BA는 0.3788/0.3788/0.3813(평균 0.380 ± 0.001)이다. 가속기를 끈 CPU 전용 세션에서는 트리 수가 660/629로 달라져 그 실행은 쓰지 않았다(같은 노트북 셀 10). 결정 3에 따라 Qwen은 V3·Q4 seed 42/43/44 개별 파일 6개를 쓴다.
 - 결정: 1, 5, 6, 7은 앙상블 시점에 결정해도 되는 것이므로 지금 생각하지 않는다. 2는 4명이 모두 11/20까지 질문 중심화를 진행해 github에 올리기로 했고, 3은 C가 Qwen 6개 파일로 고정하기로 한다. 4는 B에 맞게 A, C, D가 seed별로 측정한다. 결정하지 않은 항목은 11/25 중간 발표가 끝난 뒤, 팀 앙상블 전에 정한다(2026-11-18 회의, 정혜원 전달).
 
+### Q-11. 질문 중심화 적용 시 지킬 점 (11/20 적용 전 확인)
+- 작성: C·양서린 · 2026-11-18 · 대상: A / B / D · 상태: 열림
+- 내용: Q-10 결정 2(11/20까지 4명 모두 질문 중심화 적용)에 맞춰, 팀 앙상블에서 조건이 어긋나지 않도록 아래 세 가지를 지켜 주세요.
+  1. **같은 `prompt_id` 안에서만** 평균을 내서 뺀다. train·val·test 각각 자기 질문의 응답 18개끼리 계산하고, 분할 전체 평균이나 다른 분할의 평균을 쓰지 않는다.
+  2. **정답(`model`)은 쓰지 않는다.** 글에서 뽑은 특징(또는 임베딩)만으로 평균을 내므로 test에도 그대로 적용할 수 있다.
+  3. **test도 같은 질문 18개를 묶어서** 예측한다. 한 줄씩 따로 넣으면 중심화가 되지 않는다.
+  - 참고(C의 실제 방법): XGBoost는 특징 231개에서 질문 평균을 뺐다(`X − 같은 prompt_id의 X 평균`). Qwen은 임베딩 `H`에 `[H ; H − 같은 질문 18개의 H 평균]`을 이어 붙였다. 특징 변환기(문체 추출기·TF-IDF·SVD)는 train에만 fit했다. 코드: `seorin` [`notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb) 셀 B(`xfeat`)·셀 C(`qpredict`).
+- 제안: 12/15 test 채점 전에 C가 각자 코드에서 `prompt_id`로 묶어 평균을 뺐는지 확인한다.
+- 답변:
+- 결정:
+
 ## 결정된 항목
 
 (아직 없음)
