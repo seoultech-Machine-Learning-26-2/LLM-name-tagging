@@ -26,6 +26,8 @@ from evaluate import CLASSES, save_pred, score
 from features.build import load_splits
 
 CKPT = "answerdotai/ModernBERT-base"
+# unchanged on the Hub since 2025-01-15, so this is also the revision the 2026-11-18 runs downloaded
+REV = "8949b909ec900327062f0ebf497f51aef5e6f0c8"
 
 
 def supcon(z, y, t):
@@ -57,7 +59,7 @@ def pk_batches(y, p, k, rng):
 class Net(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.enc = AutoModel.from_pretrained(CKPT)
+        self.enc = AutoModel.from_pretrained(CKPT, revision=REV)
         self.head = torch.nn.Linear(self.enc.config.hidden_size, 18)
 
     def forward(self, ids, mask):
@@ -91,6 +93,8 @@ def main():
     ap.add_argument("--k", type=int, default=2, help="samples per class per batch")
     ap.add_argument("--save_test", action="store_true",
                     help="also save test probabilities of the val-selected epoch (never scored here)")
+    ap.add_argument("--save_model", default=None,
+                    help="dir (e.g. on Google Drive) to save the val-selected epoch weights; ~300MB fp16, too big for git")
     args = ap.parse_args()
     assert torch.cuda.is_available(), "GPU runtime required (Colab: Runtime > Change runtime type > T4 GPU)"
     dev = "cuda"
@@ -109,7 +113,7 @@ def main():
     idx = {m: i for i, m in enumerate(CLASSES)}
     ytr, yva = tr.model.map(idx).to_numpy(), va.model.map(idx).to_numpy()
 
-    tok = AutoTokenizer.from_pretrained(CKPT)
+    tok = AutoTokenizer.from_pretrained(CKPT, revision=REV)
     net = Net().to(dev)
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
     steps = len(pk_batches(ytr, args.p, args.k, np.random.default_rng(0))) * args.epochs
@@ -149,6 +153,8 @@ def main():
             # test labels are never read; only probabilities of the val-selected epoch are kept
             Pt = predict(net, tok, te.text.to_numpy(), args, dev)[0] if args.save_test else None
             best = (s, P, ep, sil, Pt)
+            if args.save_model:  # fp16 copy on CPU keeps the best epoch without holding a second GPU model
+                best_state = {k: v.detach().to("cpu", torch.float16) for k, v in net.state_dict().items()}
     fit_s = time.perf_counter() - t_start
 
     s, P, ep, sil, Pt = best
@@ -156,10 +162,15 @@ def main():
     if args.save_test:
         save_pred(te.id, Pt, CLASSES, Path("preds") / f"test_{name}_seed{args.seed}.csv")
     pd.DataFrame(log).to_csv(out / "epoch_log.csv", index=False)
+    weights = None
+    if args.save_model:
+        weights = Path(args.save_model) / f"{name}_seed{args.seed}.pt"
+        weights.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(best_state, weights)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    summary = {"run_id": name, "owner": "B", "model": CKPT, "feature_set": "raw text",
+    summary = {"run_id": name, "owner": "B", "model": CKPT, "revision": REV, "weights": str(weights) if weights else None, "feature_set": "raw text",
                "preprocessing": f"tokenizer truncation max_len={args.max_len}, mean pooling",
-               "params": json.dumps({k: v for k, v in vars(args).items() if k != "seed"}), "seed": args.seed,
+               "params": json.dumps({k: v for k, v in vars(args).items() if k not in ("seed", "save_model")}), "seed": args.seed,
                "split": "val", "n_samples": len(yva), "model_BA": s["model_BA"], "accuracy": s["model_Acc"],
                "macro_f1": s["model_F1"], "company_BA": s["company_BA"], "company_method": "prob_sum(softmax)",
                "fit_seconds": round(fit_s, 1), "predict_seconds": None, "code_commit": commit,
