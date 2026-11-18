@@ -179,6 +179,7 @@ def main():
 if __name__ == "__main__":
     # self-check: SupCon is lower when same-class embeddings coincide than when they are random
     y0 = torch.tensor([0, 0, 1, 1])
-    assert supcon(torch.tensor([[1., 0], [1, 0], [0, 1], [0, 1]]), y0, 0.1) < supcon(torch.randn(4, 2), y0, 0.1)
+    good, bad = torch.tensor([[1., 0], [1, 0], [0, 1], [0, 1]]), torch.tensor([[1., 0], [0, 1], [1, 0], [0, 1]])
+    assert supcon(good, y0, 0.1) < supcon(bad, y0, 0.1)  # same-class aligned beats same-class orthogonal
     assert all(len(set(np.array([0, 0, 1, 1, 2, 2])[b])) == 2 for b in pk_batches(np.array([0, 0, 1, 1, 2, 2]), 2, 2, np.random.default_rng(0)))
     main()
