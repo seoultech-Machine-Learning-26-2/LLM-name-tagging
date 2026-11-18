@@ -5,6 +5,7 @@ Train only on train, compare on val. Test is never opened here.
 import json
 import platform
 import subprocess
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -108,9 +109,29 @@ def save_confusion(run_meta, name):
     fig.tight_layout(); fig.savefig(OUT / f"confusion_{name}.png", dpi=120); plt.close(fig)
 
 
+FINAL = [("style", 0.1), ("combined", 0.1)]  # fixed from val before test (docs/experiments/B-svm.md 8절)
+
+
+def save_test_preds():
+    """Refit the fixed final configs on train (same calibration folds) and save test probabilities. No scoring."""
+    frames = load_splits("data/split", include_test=True)
+    tr, te = frames["train"], frames["test"].sort_values("id").reset_index(drop=True)
+    X, y = tr.text.to_numpy(), tr.model.map({m: i for i, m in enumerate(CLASSES)}).to_numpy()
+    folds = list(GroupKFold(n_splits=5).split(X, y, tr.prompt_id.to_numpy()))
+    for kind, C in FINAL:
+        path = PREDS / f"test_B_svm_{kind}_C{C}_seed{SEED}.csv"
+        if path.exists():
+            print(f"skip {path}", flush=True); continue
+        print(f"test preds {kind} C={C} ({time.strftime('%H:%M:%S')})", flush=True)
+        cal = CalibratedClassifierCV(make_pipe(kind, C), method="sigmoid", cv=folds).fit(X, y)
+        save_pred(te.id, cal.predict_proba(te.text.to_numpy()), CLASSES, path)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     PREDS.mkdir(exist_ok=True)
+    if "--test" in sys.argv:
+        return save_test_preds()
     frames = load_splits("data/split")
     tr, va = frames["train"], frames["val"]
     idx = {m: i for i, m in enumerate(CLASSES)}

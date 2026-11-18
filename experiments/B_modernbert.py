@@ -89,19 +89,25 @@ def main():
     ap.add_argument("--max_len", type=int, default=512)
     ap.add_argument("--p", type=int, default=8, help="classes per batch")
     ap.add_argument("--k", type=int, default=2, help="samples per class per batch")
+    ap.add_argument("--save_test", action="store_true",
+                    help="also save test probabilities of the val-selected epoch (never scored here)")
     args = ap.parse_args()
     assert torch.cuda.is_available(), "GPU runtime required (Colab: Runtime > Change runtime type > T4 GPU)"
     dev = "cuda"
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
 
-    frames = load_splits("data/split")
+    name = f"B_modernbert_lam{args.lam:g}" + ("" if args.epochs == 4 else f"_ep{args.epochs}")
+    out = Path("results/course/B/modernbert") / f"{name}_seed{args.seed}"
+    if (out / "summary.json").exists():  # lets a reconnected Colab rerun skip finished runs
+        print(f"skip {out} (summary.json exists)")
+        return
+    out.mkdir(parents=True, exist_ok=True)
+    frames = load_splits("data/split", include_test=args.save_test)
     tr, va = frames["train"], frames["val"].sort_values("id").reset_index(drop=True)
+    te = frames["test"].sort_values("id").reset_index(drop=True) if args.save_test else None
     idx = {m: i for i, m in enumerate(CLASSES)}
     ytr, yva = tr.model.map(idx).to_numpy(), va.model.map(idx).to_numpy()
-    name = f"B_modernbert_lam{args.lam:g}"
-    out = Path("results/course/B/modernbert") / f"{name}_seed{args.seed}"
-    out.mkdir(parents=True, exist_ok=True)
 
     tok = AutoTokenizer.from_pretrained(CKPT)
     net = Net().to(dev)
@@ -138,13 +144,17 @@ def main():
                "val_company_BA": s["company_BA"], "val_sibling_Acc": s["sibling_Acc"],
                "val_LogLoss": s["model_LogLoss"], "val_silhouette_cos": sil,
                "elapsed_s": round(time.perf_counter() - t_start, 1)}
-        log.append(row); print(json.dumps(row))
+        log.append(row); print(json.dumps(row), flush=True)
         if best is None or s["model_BA"] > best[0]["model_BA"]:
-            best = (s, P, ep, sil)
+            # test labels are never read; only probabilities of the val-selected epoch are kept
+            Pt = predict(net, tok, te.text.to_numpy(), args, dev)[0] if args.save_test else None
+            best = (s, P, ep, sil, Pt)
     fit_s = time.perf_counter() - t_start
 
-    s, P, ep, sil = best
+    s, P, ep, sil, Pt = best
     save_pred(va.id, P, CLASSES, Path("preds") / f"val_{name}_seed{args.seed}.csv")
+    if args.save_test:
+        save_pred(te.id, Pt, CLASSES, Path("preds") / f"test_{name}_seed{args.seed}.csv")
     pd.DataFrame(log).to_csv(out / "epoch_log.csv", index=False)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     summary = {"run_id": name, "owner": "B", "model": CKPT, "feature_set": "raw text",
@@ -159,7 +169,8 @@ def main():
                "gpu": torch.cuda.get_device_name(0),
                "versions": {"python": platform.python_version(), "torch": torch.__version__,
                             "transformers": transformers.__version__},
-               "selection": "epoch with best val model BA", "test_opened": False,
+               "selection": "epoch with best val model BA",
+               "test_opened": "test probabilities saved, not scored" if args.save_test else False,
                **{f"cal_{k}": v for k, v in s.items()}}
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2, default=float))
