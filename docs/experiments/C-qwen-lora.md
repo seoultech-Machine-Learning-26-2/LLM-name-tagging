@@ -18,7 +18,7 @@
 | 모델 구분 | 심화 모델 |
 | 실험 날짜 | 2026-11-15 ~ 2026-11-17 (seed 42, Colab), 2026-11-17 (seed 43·44, Kaggle), 2026-11-18 (앙상블·test 예측) |
 | 실험 환경 | PyTorch fp32 가중치 + fp16 autocast, gradient checkpointing, flash-linear-attention |
-| 코드 | `seorin` [`0434772`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/0434772/experiments/C_qwen_lora.py) `experiments/C_qwen_lora.py` (학습) · [`experiments/C_ensemble_predict.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/0434772/experiments/C_ensemble_predict.py) (앙상블·test 예측) |
+| 코드 | Qwen 학습·앙상블·test 예측 노트북 원본(.ipynb)은 **추가 예정**(Kaggle에서 내려받아 그대로 올림). 실행 위치: Kaggle 노트북 `yangseorin/llmnametagging`(학습 Version 1·2, 앙상블·예측 2026-11-18 세션), seed 42는 Colab |
 
 ## 2. 실험 설정
 
@@ -232,9 +232,9 @@ Q1(동결)의 Macro F1은 기록하지 않아 BA로 비교한다(클래스당 �
 
 | 산출물 | 저장 경로 |
 | --- | --- |
-| 학습 코드 | `seorin`: [`experiments/C_qwen_lora.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/0434772/experiments/C_qwen_lora.py) · 앙상블·예측: [`experiments/C_ensemble_predict.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/0434772/experiments/C_ensemble_predict.py) |
+| 학습 코드 | Qwen 학습·앙상블·test 예측 노트북 원본(.ipynb)은 **추가 예정**(Kaggle에서 내려받아 그대로 올림) |
 | 모델 체크포인트 | 깃허브에 올리지 않음(LoRA 어댑터 약 20MB씩). seed 42: 개인 Google Drive `mlproject/results/` 및 Kaggle 비공개 데이터셋 `yangseorin/c-assets` · seed 43·44: Kaggle 노트북 `yangseorin/llmnametagging` Version 2 Output `results/` |
-| 설정 / 체크포인트 (필요 시) | 복원: `AutoModelForCausalLM.from_pretrained('Qwen/Qwen3.5-0.8B').model`에 `PeftModel.from_pretrained(본체, {run}_lora_ep3)`를 얹고 `{run}_head_ep3.pt`를 `FlatHead`/`HierHead`에 불러온다(`C_ensemble_predict.py` 셀 3). 팀원이 쓰려면 Kaggle 데이터셋·노트북 공유가 필요하다 |
+| 설정 / 체크포인트 (필요 시) | 복원: `AutoModelForCausalLM.from_pretrained('Qwen/Qwen3.5-0.8B').model`에 `PeftModel.from_pretrained(본체, {run}_lora_ep3)`를 얹고 `{run}_head_ep3.pt`를 `FlatHead`/`HierHead`에 불러온다(앙상블·예측 노트북 셀 3). 팀원이 쓰려면 Kaggle 데이터셋·노트북 공유가 필요하다 |
 | 평가 결과 CSV | `seorin` [`preds/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds): `val_C_FINAL.csv`, `test_C_FINAL.csv`, `test_C_{Q2,Q3,V3_seed42~44,Q4_seed42~44}.csv` (test 채점 없음) · 설정별 val 예측은 위 체크포인트 위치에 함께 있음 |
 | Confusion Matrix | 4.1절 표 (그림 없음) |
 | 특징 분석 그래프 | 없음 (4.2절 표) |

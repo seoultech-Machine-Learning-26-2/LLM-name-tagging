@@ -88,7 +88,7 @@
 - 작성: C·양서린 · 2026-11-18 · 대상: 전원 · 상태: 열림
 - 내용:
   - C 작업 브랜치는 `seorin`이다([AGENTS.md](../AGENTS.md) 2절 표에 반영).
-  - 코드: `seorin` `experiments/C_xgboost.py`, `C_qwen_lora.py`, `C_ensemble_predict.py` · 예측: `seorin` `preds/` (val·test, test 채점 없음) · 결과 문서: [C 요약](experiments/C-summary.md), [XGBoost](experiments/C-xgboost.md), [Qwen LoRA](experiments/C-qwen-lora.md)
+  - 코드: `seorin` `experiments/run_xgb_official.py`, `cv.py`, `bfeat.py`(XGBoost, 실행한 원본) · Qwen 노트북 원본 추가 예정 · 예측: `seorin` `preds/` (val·test, test 채점 없음) · 결과 문서: [C 요약](experiments/C-summary.md), [XGBoost](experiments/C-xgboost.md), [Qwen LoRA](experiments/C-qwen-lora.md)
   - 정답 열을 뺀 test 파일 `seorin` `preds/test_nolabel.csv`를 팀원 예측용으로 쓸 수 있다.
   - Qwen 어댑터(체크포인트)는 깃허브에 올리지 않고 Kaggle(비공개 데이터셋·노트북 출력)과 개인 드라이브에 있다. 다시 실행이 필요하면 공유 방법을 정한다.
   - 처음에 `seorin` 브랜치에서 `discussion.md`를 고친 커밋(`4834a7d`)은 이 항목과 Q-1~Q-3 답변으로 대신한다.
