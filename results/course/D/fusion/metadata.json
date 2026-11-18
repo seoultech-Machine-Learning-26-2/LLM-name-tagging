@@ -1,0 +1,39 @@
+{
+  "env": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "torch": "2.11.0+cu130",
+    "device": "cuda",
+    "gpu": "Tesla T4",
+    "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+    "code_commit": "dfe3eba"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "branches": [
+    "semantic",
+    "style",
+    "fusion"
+  ],
+  "hp": {
+    "hidden": 256,
+    "dropout": 0.3,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 32,
+    "epochs": 40,
+    "patience": 8
+  },
+  "input_dims": {
+    "semantic": 384,
+    "style": 32,
+    "fusion": 416
+  },
+  "best_branch": "style"
+}
