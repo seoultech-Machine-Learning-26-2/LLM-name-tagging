@@ -1,8 +1,10 @@
 # B · Linear SVM 실험 결과 (B-1 ~ B-4)
 
-> 담당: 정혜원(B) · 상태: **val 실험 완료 / test 1회 평가 완료** · 작성: 2026-11-18 · 수정: 2026-11-18 · 정리: B/Claude
+> 담당: 정혜원(B) · 상태: **val 실험 완료 / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-18 · 정리: B/Claude
 
-코드·결과는 `hyewon` 브랜치에 있다. 6.4절 외의 숫자는 모두 **val(질문 22개 × 18모델 = 396개)** 결과다. test(질문 23개 × 18모델 = 414개)는 설정을 고정한 뒤 6.4절에서 한 번만 채점했다.
+코드·결과는 `hyewon` 브랜치에 있다. 아래 숫자는 모두 **val(질문 22개 × 18모델 = 396개)** 결과다.
+
+> **test 채점 보류 (2026-11-18):** 이 문서는 처음에 당시 계획(11/17~11/18 각자 test 1회 평가)에 따라 test를 한 번 채점해 숫자를 적었다(`hyewon` `cd6d620`). 같은 날 팀 앙상블과 test 일괄 채점으로 계획을 바꾸면서([다음 작업 계획](../next-tasks-A-B-C-D.md) 4절) test 숫자는 이 문서에서 빼고, 공식 test 결과는 통합 채점값을 쓴다. 채점 뒤 설정·선택을 바꾼 것은 없으며, test 예측 파일은 그대로 제출한다.
 
 ## 1. 실행 환경
 
@@ -79,28 +81,19 @@ val은 클래스마다 22개로 균형이라 BA = Accuracy다. 원본: [`metrics
 
 | 평가 지표 | 개발사 6개 Validation | 개발사 6개 Test | 18개 모델 Validation | 18개 모델 Test |
 | --- | --- | --- | --- | --- |
-| Accuracy | 0.6692 | 0.6594 | 0.3005 | 0.3140 |
-| Precision (Macro) | 0.5499 | 0.5638 | 0.2621 | 0.2994 |
-| Recall (Macro) = BA | 0.4557 | 0.4380 | 0.3005 | 0.3140 |
-| F1 (Macro) | 0.4277 | 0.4117 | 0.2710 | 0.2936 |
-| F1 (Weighted) | 0.6032 | 0.5936 | 0.2710 | 0.2936 |
-| Log loss / ECE | 1.0240 / 0.1475 | 1.0719 / 0.1517 | 2.1600 / 0.0618 | 2.2789 / 0.0744 |
-| 형제 정확도 | – | – | 0.4534 | 0.4574 |
+| Accuracy | 0.6692 | 미평가 | 0.3005 | 미평가 |
+| Precision (Macro) | 0.5499 | 미평가 | 0.2621 | 미평가 |
+| Recall (Macro) = BA | 0.4557 | 미평가 | 0.3005 | 미평가 |
+| F1 (Macro) | 0.4277 | 미평가 | 0.2710 | 미평가 |
+| F1 (Weighted) | 0.6032 | 미평가 | 0.2710 | 미평가 |
+| Log loss / ECE | 1.0240 / 0.1475 | 미평가 | 2.1600 / 0.0618 | 미평가 |
+| 형제 정확도 | – | – | 0.4534 | 미평가 |
 
 개발사 지표는 18개 확률을 개발사별로 합산한 방식(`company_BA`)이다. 1위 모델의 개발사를 쓰는 `company_BA_argmax`(0.494)와 직접 비교하지 않는다.
 
-### 6.4 test 1회 평가 (보정 확률)
+### 6.4 test
 
-val에서 정한 두 설정을 train 전체로 다시 학습해 test 확률을 저장했고(`python -m experiments.B_svm --test`, Colab, 코드 `109f514`), 채점은 [`experiments/B_test_eval.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/experiments/B_test_eval.py)로 한 번만 했다(결과 커밋 `cd6d620`). 결과를 보고 다시 튜닝하지 않는다.
-
-| 입력 (C=0.1) | val 모델 BA | test 모델 BA [95% CI] | val 개발사 BA | test 개발사 BA [95% CI] |
-| --- | --- | --- | --- | --- |
-| 문체 | 0.258 | 0.278 [0.242, 0.316] | 0.410 | 0.413 [0.385, 0.442] |
-| 결합 | 0.301 | **0.314** [0.268, 0.362] | 0.456 | 0.438 [0.400, 0.475] |
-
-- 여기 BA는 보정 확률의 argmax라 6.1절 "val BA (SVM)" 열(문체 0.278)과 다르다.
-- test에서도 결합 − 문체는 모델 BA +0.036 [0.007, 0.068], 개발사 BA +0.025 [0.003, 0.046]로 **val의 결론(결합이 낫다)이 유지**됐다. val과 test 차이는 구간 폭(±0.05) 안이다.
-- 원본: [`results/course/B/test/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/results/course/B/test) (`summary.csv`, `compare_test.csv`, `template_*.csv`)
+val에서 고정한 두 설정(문체 C=0.1, 결합 C=0.1)을 train 전체로 다시 학습해 test 확률만 저장했다(`python -m experiments.B_svm --test`, Colab, 코드 `109f514`, 예측 커밋 `1c5dc2a`). 채점은 팀 통합 때 C가 1회 한다.
 
 ## 7. 해석과 오류 분석 (B-4)
 
@@ -127,7 +120,7 @@ val에서 정한 두 설정을 train 전체로 다시 학습해 test 확률을 �
 - 문체 32개만으로 val BA 0.278(무작위 0.056)이고, 결합하면 0.301로 오른다(문체 대비 개선 구간 > 0). 그러나 **C의 TF-IDF+LR 기준선(0.290)과는 차이가 없다.**
 - 개발사 수준은 잘 구분하나 GLM↔Claude, Kimi·Qwen→OpenAI 혼동이 크다.
 - 한계: val 질문 22개뿐이라 구간이 넓다(±0.05). 결합 C=1/10은 5,000회 안에 수렴하지 않았다. 문체 스케일링 방식이 공통 extractor와 다르다. 보정은 one-vs-rest sigmoid라 개발사 ECE(0.148)가 높다.
-- **test(1회):** 결합 C=0.1(B 최종) 모델 BA 0.314, 개발사 BA 0.438. 문체 C=0.1(공통 입력 비교용) 0.278 / 0.413. ModernBERT와의 test 비교는 [B-modernbert](B-modernbert.md) 6.5절.
+- **test:** 문체 C=0.1(공통 입력 비교용)과 결합 C=0.1(B 최종)의 예측을 제출했다. 채점은 팀 통합 때 1회.
 
 ## 9. 코드·산출물
 
@@ -137,6 +130,5 @@ val에서 정한 두 설정을 train 전체로 다시 학습해 test 확률을 �
 | 실행 노트북 | [`notebooks/B_colab.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/notebooks/B_colab.ipynb) |
 | 지표·비교표·설정 | [`results/course/B/svm/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/results/course/B/svm) (`metrics.csv`, `feature_compare_*.csv`, `run_meta.json`) |
 | 혼동행렬·오류·계수 | 같은 폴더 `confusion_*`, `errors_*`, `top_coef_*` |
-| test 채점 코드·결과 | [`experiments/B_test_eval.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/experiments/B_test_eval.py), [`results/course/B/test/`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/results/course/B/test) |
 | val·test 예측 (C `save_pred` 형식) | [`preds/val_B_svm_*_seed42.csv`, `preds/test_B_svm_{style,combined}_C0.1_seed42.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/hyewon/preds) |
 | 체크포인트 | 저장 안 함 (CPU 수 분 내 재학습 가능) |
