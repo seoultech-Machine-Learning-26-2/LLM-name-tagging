@@ -1,4 +1,4 @@
-"""D: Logistic Regression"""
+"""D: Logistic Regression (D-1, D-2). train 학습, val 비교, test는 --final 로만."""
 import argparse
 import json
 import platform
@@ -10,6 +10,7 @@ from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -28,6 +29,21 @@ sys.path.insert(0, str(ROOT))
 import evaluate as ev                                    # noqa: E402  C의 공통 평가 코드
 from features.build import load_splits, make_extractor   # noqa: E402  B의 공통 특징
 from features.stylometry import StylometricTransformer   # noqa: E402
+
+def setup_font():
+    for path in ["/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                 "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+                 "C:/Windows/Fonts/malgun.ttf"]:
+        if Path(path).exists():
+            fm.fontManager.addfont(path)
+            plt.rcParams["font.family"] = fm.FontProperties(fname=path).get_name()
+            plt.rcParams["axes.unicode_minus"] = False
+            return True
+    return False
+
+
+KO = setup_font()
+T = (lambda ko, en: ko if KO else en)
 
 SEEDS = [42, 43, 44]
 CS = [0.1, 1.0, 10.0]
@@ -98,14 +114,14 @@ def run(kind, C, frames, y, seed, split="val"):
         "params": json.dumps({"C": C, "max_iter": MAX_ITER, "solver": "lbfgs", "penalty": "l2"}),
         "seed": seed, "split": split, "n_samples": len(frames[split]),
         "n_features": pipe.named_steps["lr"].coef_.shape[1],
-        "train_model_BA": train_ba,
-        "model_BA": s["model_BA"], "accuracy": s["model_Acc"], "macro_f1": s["model_F1"],
-        "log_loss": s["model_LogLoss"], "ece": s["model_ECE"], "sibling_acc": s["sibling_Acc"],
-        "company_BA": s["company_BA"], "company_method": "prob_sum",
-        "company_BA_argmax": s["company_BA_argmax"],
+        "train_model_BA": train_ba, "company_method": "prob_sum",
+        "accuracy": s["model_Acc"], "macro_f1": s["model_F1"],
+        "log_loss": s["model_LogLoss"], "ece": s["model_ECE"],
+        "sibling_acc": s["sibling_Acc"],
         "n_iter": n_iter, "converged": converged,
         "fit_seconds": round(fit_s, 2), "predict_seconds": round(pred_s, 3),
     }
+    row.update(s)
     return row, pipe, P
 
 
@@ -120,10 +136,48 @@ def run_dummy(frames, y):
                      "config": strategy, "feature_set": "-", "preprocessing": "-",
                      "params": json.dumps({"strategy": strategy}), "seed": 42, "split": "val",
                      "n_samples": len(frames["val"]),
-                     "model_BA": s["model_BA"], "accuracy": s["model_Acc"],
-                     "macro_f1": s["model_F1"], "company_BA": s["company_BA"],
-                     "company_method": "prob_sum"})
+                     "accuracy": s["model_Acc"], "macro_f1": s["model_F1"],
+                     "company_method": "prob_sum", **s})
     return rows
+
+
+def calibration_table(y_true, P, bins=5):
+    conf = P.max(1)
+    ok = P.argmax(1) == y_true
+    edges = np.linspace(0, 1, bins + 1)
+    idx = np.clip(np.digitize(conf, edges[1:-1]), 0, bins - 1)
+    recs = []
+    for b in range(bins):
+        m = idx == b
+        if m.any():
+            recs.append({"bin": f"{edges[b]:.1f}-{edges[b+1]:.1f}", "n": int(m.sum()),
+                         "mean_confidence": round(float(conf[m].mean()), 4),
+                         "actual_accuracy": round(float(ok[m].mean()), 4),
+                         "gap": round(float(conf[m].mean() - ok[m].mean()), 4)})
+    return pd.DataFrame(recs)
+
+
+def per_class_table(y_true, P):
+    pred = P.argmax(1)
+    recs = []
+    for i, name in enumerate(ev.CLASSES):
+        m = y_true == i
+        recs.append({"model": name, "n_val": int(m.sum()),
+                     "recall": round(float((pred[m] == i).mean()), 4) if m.any() else np.nan,
+                     "n_predicted": int((pred == i).sum()),
+                     "precision": round(float((y_true[pred == i] == i).mean()), 4)
+                     if (pred == i).any() else np.nan})
+    return pd.DataFrame(recs).sort_values("recall")
+
+
+def sibling_table(y_true, P):
+    pred = P.argmax(1)
+    w = pred != y_true
+    same = ev.M2C[y_true[w]] == ev.M2C[pred[w]]
+    return pd.DataFrame([{"n_wrong": int(w.sum()),
+                          "same_company_errors": int(same.sum()),
+                          "same_company_rate": round(float(same.mean()), 4),
+                          "chance_rate": round(1 / 6, 4)}])
 
 
 def error_table(frames, y, P, n=5):
@@ -194,7 +248,8 @@ def fig_comparison(res, out):
     axes[1].bar(x - .2, d2.train_model_BA, .4, label="train BA")
     axes[1].bar(x + .2, d2.model_BA, .4, label="val BA")
     axes[1].set_xticks(x, d2.feature_set)
-    axes[1].set(ylabel="BA", title="D-2: 입력별 (각 입력의 최고 C)")
+    axes[1].set(ylabel="BA", title=T("D-2: 입력별 (각 입력의 최고 C)",
+                                      "D-2: feature sets (best C each)"))
     axes[1].legend(); axes[1].grid(alpha=.3, axis="y")
 
     fig.tight_layout()
@@ -266,6 +321,9 @@ def compare_val(args, frames, y, out, commit):
     ev.save_pred(frames["val"].id, P_best, ev.CLASSES,
                  args.pred_dir / f"val_D_lr_{best_key}_seed42.csv")
     error_table(frames, y, P_best).to_csv(out / "val_errors_seed42.csv", index=False)
+    calibration_table(y["val"], P_best).to_csv(out / "val_calibration.csv", index=False)
+    per_class_table(y["val"], P_best).to_csv(out / "val_per_class.csv", index=False)
+    sibling_table(y["val"], P_best).to_csv(out / "val_sibling_errors.csv", index=False)
     coefficient_table(pipes[f"{PRIMARY_KIND}_C{C_fixed}"]).to_csv(
         out / "coefficients_style.csv", index=False)
     fig_confusion(y["val"], P_best, out, best_key)
