@@ -24,6 +24,7 @@
 
 - [다음 단계 A·B·C·D 작업 계획](next-tasks-A-B-C-D.md): 강의 중심 실험·담당·일정. 기존 수행 기록과 구분한다.
 - [개인 실험 결과 템플릿](experiment-result-template.md): 새 실험 보고서를 만들 때 복사한다. 미실행 결과는 빈칸 또는 `미측정`으로 둔다.
+- B 실험 결과 (2026-11-18, val 완료·test 미평가): [Linear SVM](experiments/B-svm.md) · [ModernBERT + 대조 학습](experiments/B-modernbert.md)
 
 ## 문서 갱신 방법
 
