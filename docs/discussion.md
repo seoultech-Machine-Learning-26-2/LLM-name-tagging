@@ -107,6 +107,36 @@
 - 답변:
 - 결정:
 
+### Q-10. 팀 앙상블 전에 맞춰야 할 차이 (4개 브랜치 비교)
+- 작성: B·정혜원 · 2026-11-18 · 대상: 전원 · 상태: 열림
+- 근거: 2026-11-18 16시경 `eunjin`(A)·`hyewon`(B)·`seorin`(C)·`haram`(D) 브랜치의 코드·문서·`preds/`를 비교했다. 저장소에 있는 예측 파일(B, C, D 융합)은 공통 `evaluate.py`로 다시 채점해 문서 숫자와 일치하고 형식(`id` + 18개 확률, 알파벳순)도 맞는 것을 확인했다.
+- 현황 (val 18개 모델 BA, 각 문서 기준):
+
+  | 담당 | 고전 | 심화 | 질문 중심화 |
+  | --- | --- | --- | --- |
+  | A | Random Forest 0.205 | DeBERTa 결과 없음(코드만) | 안 씀 |
+  | B | Linear SVM 0.301 | ModernBERT 0.341 | 안 씀 |
+  | C | XGBoost 0.381 | Qwen LoRA 앙상블 0.548, 최종(+XGB) 0.551 | 씀 |
+  | D | Logistic Regression 0.412 | Sentence-BERT 융합 0.248 (문체만 0.275) | 고전만 씀 |
+
+- 내용 (차이점):
+  1. **예측 파일 짝이 맞지 않는다.** 앙상블은 val로 조합을 고르고 test에 적용하므로 같은 모델의 val·test 파일이 모두 필요하다. A: val·test 모두 저장소에 없음. C: Qwen 개별 모델은 test만 있고 val 없음. D: test 없음, Logistic Regression 파일 없음, 융합은 seed 42만. B: 모두 있음.
+  2. **질문 중심화 사용 여부가 다르다.** C(XGBoost·Qwen)와 D(Logistic Regression)는 같은 질문 응답 18개를 함께 써서 예측하고, A·B·D 융합은 응답 하나만 본다. 섞으면 "응답 단독 예측" 조건이 깨진다(Q-8과 연결).
+  3. **이미 앙상블된 파일이 있다.** `C_FINAL` = Qwen 6개 평균 × 0.8 + XGBoost × 0.2. `C_FINAL`과 `C_XGB`를 함께 넣으면 XGBoost가 두 번 들어간다.
+  4. **seed 저장 방식이 다르다.** B는 seed별 파일, C는 seed 평균 파일 1개, D 융합은 seed 42 파일만(문서 숫자는 3개 평균), A는 파일 없음. "seed 평균 val BA" 선택 규칙을 쓰려면 통일해야 한다.
+  5. **확률 보정 정도가 다르다.** val 18개 모델 ECE: A 0.04, C 최종 0.06, B SVM 0.06(sigmoid 보정), D 융합 0.12, B ModernBERT 0.20. 단순 평균하면 확신이 큰 모델이 결과를 더 끈다.
+  6. **설정·epoch 선택 방식이 다르다.** A: 차이가 seed 표준편차 이내면 LogLoss 낮은 쪽. B·D 융합: val 최고 epoch(val 점수가 약간 부풀 수 있음). C Qwen: epoch 3 고정. D Logistic Regression: val 최고 + bootstrap 비교.
+  7. **입력 처리가 조금씩 다르다.** 최대 토큰 길이 B ModernBERT 512, C Qwen 384, D MiniLM은 문서에 없음. 문자 TF-IDF는 C 기준선 2~6그램, B·D 3~5그램(B 30,000개, D 5,000개). 문체 32개는 모두 B 공통 코드.
+  8. **기록 상태가 다르다.** A(11/17)·B(11/18)는 이전 계획대로 test를 1회 채점한 뒤 공식 결과에서 뺐다. C·D는 채점하지 않았다. A 문서에는 "11/18 팀 회의에서 일괄 채점 결정"이라고 적혀 있다(회의 전이면 수정 필요). D Logistic Regression 수치는 Kaggle이 아닌 다른 환경에서 측정했다고 적혀 있다.
+- 정할 것:
+  1. 각자 val·test 예측 파일을 짝으로 12/14까지 `preds/`에 올리기 (A 전부, C Qwen 개별 val, D test·Logistic Regression)
+  2. 질문 중심화 모델을 앙상블에 섞을지, "응답 단독" / "질문 묶음 이용" 앙상블을 따로 만들지
+  3. `C_FINAL`처럼 이미 섞은 파일을 넣을지, 개별 모델 파일로만 할지
+  4. seed 저장 방식(seed별 파일 vs 평균 파일) 통일
+  5. 결합 방법: 확률 단순 평균 / 보정 후 평균 / 가중 평균(가중치는 val로만)
+- 답변:
+- 결정:
+
 ## 결정된 항목
 
 (아직 없음)
