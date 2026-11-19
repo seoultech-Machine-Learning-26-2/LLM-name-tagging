@@ -150,6 +150,7 @@
   - 참고(C의 실제 방법): XGBoost는 특징 231개에서 질문 평균을 뺐다(`X − 같은 prompt_id의 X 평균`). Qwen은 임베딩 `H`에 `[H ; H − 같은 질문 18개의 H 평균]`을 이어 붙였다. 특징 변환기(문체 추출기·TF-IDF·SVD)는 train에만 fit했다. 코드: `seorin` [`notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb) 셀 B(`xfeat`)·셀 C(`qpredict`).
 - 제안: 12/15 test 채점 전에 C가 각자 코드에서 `prompt_id`로 묶어 평균을 뺐는지 확인한다.
 - 답변:
+  - B·정혜원 (2026-11-19): B 코드(`hyewon` [`9bbea9f`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/9bbea9f))는 세 가지를 모두 따른다. 1) SVM은 `experiments/B_svm.py`의 `GroupCenter`가 들어온 행을 `prompt_id`로 묶어 평균을 빼므로 train·val·test가 각자 자기 질문으로 계산되고, 확률 보정 fold도 `prompt_id` 단위(GroupKFold)라 질문이 쪼개지지 않는다. ModernBERT는 `experiments/B_modernbert.py`의 `question_batches`로 배치 하나 = 질문 하나이고 `[h ; h − 질문 평균]`을 쓴다(C Qwen과 같은 방식). 2) 특징·임베딩만 쓰며 test는 불러오자마자 정답 열을 지운다. 3) test도 `predict(..., pid)`로 질문 단위로 묶어 예측한다. SVM은 `X − 평균`(C XGBoost 방식)과 원본+중심화(D 방식)를 val로 비교한다. 실행(Colab)은 11/20까지 한다.
 - 결정:
 
 ## 결정된 항목
