@@ -1,6 +1,6 @@
 # B · Linear SVM 실험 결과 (B-1 ~ B-4)
 
-> 담당: 정혜원(B) · 상태: **val 실험 완료 / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-18 · 정리: B/Claude
+> 담당: 정혜원(B) · 상태: **val 실험 완료(질문 중심화 포함) / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-20 · 정리: B/Claude
 
 코드·결과는 `hyewon` 브랜치에 있다. 아래 숫자는 모두 **val(질문 22개 × 18모델 = 396개)** 결과다.
 
@@ -95,6 +95,28 @@ val은 클래스마다 22개로 균형이라 BA = Accuracy다. 원본: [`metrics
 
 val에서 고정한 두 설정(문체 C=0.1, 결합 C=0.1)을 train 전체로 다시 학습해 test 확률만 저장했다(`python -m experiments.B_svm --test`, Colab, 코드 `109f514`, 예측 커밋 `1c5dc2a`). 채점은 팀 통합 때 C가 1회 한다.
 
+### 6.5 질문 중심화 (2026-11-20, **질문 묶음 이용**)
+
+11/18 회의 결정([질문함](../discussion.md) Q-10 2번, Q-11)에 따라 같은 `prompt_id` 응답들의 특징 평균을 빼는 **질문 중심화**를 적용했다. 정답은 쓰지 않고, train·val·test 각각 자기 질문 안에서만 평균을 낸다. 예측할 때 같은 질문의 다른 응답을 함께 쓰므로 6.1~6.3절(응답 단독)과 구분한다.
+
+- 방식: `center` = `X − 질문 평균`(C XGBoost와 같음), `concat` = `[X ; X − 질문 평균]`(D와 같음). 특징 추출기는 train에만 fit, 확률 보정 fold도 `prompt_id` 단위.
+- 설정: 문체 × {center, concat} × C {0.1, 1, 10}, 결합 × {center, concat} × C=0.1. 결합은 dense 3만~6만 차원이라 C=0.1만 돌렸다(학습 1회 429초 / 726초, Colab CPU).
+- 실행: `python -m experiments.B_svm --center`, 코드 `hyewon` [`9bbea9f`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/9bbea9f), 결과 커밋 `2c2639f`, 원본 [`metrics_center.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/hyewon/results/course/B/svm/metrics_center.csv).
+
+| 입력 (보정 확률) | 중심화 없음 | center | concat |
+| --- | --- | --- | --- |
+| 문체 모델 BA (C=0.1 / 1 / 10) | 0.258 / 0.258 / 0.255 | 0.331 / 0.333 / **0.343** | 0.333 / 0.321 / 0.323 |
+| 결합 모델 BA (C=0.1) | 0.301 | 0.376 | **0.386** |
+| 결합 개발사 BA (C=0.1) | 0.456 | 0.502 | 0.511 |
+| 결합 LogLoss / ECE (C=0.1) | 2.160 / 0.062 | 1.963 / 0.125 | 1.923 / 0.119 |
+| 결합 train BA (SVM) | 0.857 | 0.831 | 0.965 |
+
+- 질문 단위 paired bootstrap(1000회), 중심화 없음 대비 모델 BA: 문체 center C=10 **+0.084 [0.033, 0.134]**, 결합 concat **+0.086 [0.048, 0.129]**, 결합 center +0.075 [0.035, 0.116]. 모두 구간이 0보다 커서 **이 val에서는 중심화가 확실히 낫다.** 개발사 BA도 +0.05 안팎으로 올랐다.
+- 결합 concat 모델 BA 95% CI [0.331, 0.434]. C의 기준선(0.290)과 C XGBoost+중심화(0.381)와 비슷한 수준이다.
+- ECE는 0.06 → 0.12로 나빠졌다(확률이 덜 정직해짐). LogLoss는 좋아졌다.
+- **val로 고른 질문 묶음 설정(test 확률만 저장, 채점 없음):** 문체 `center` C=10, 결합 `concat` C=0.1 → `preds/test_B_svm_style_center_C10_seed42.csv`, `preds/test_B_svm_combined_concat_C0.1_seed42.csv`. 선택 기준은 보정 확률의 val 모델 BA 최고(동률이면 작은 C, center 먼저).
+- 한계: val 질문 22개뿐, 결합은 C 하나만 탐색, SVM은 결정적이라 seed 1개.
+
 ## 7. 해석과 오류 분석 (B-4)
 
 - **스케일링이 필요한 이유:** 같은 문체 32개에서 스케일링을 빼면 val BA 0.278 → 0.230. `char_count`(수백~수천)처럼 큰 값이 마진 계산을 지배해 작은 비율 특징이 무시되기 때문으로 해석한다.
@@ -121,6 +143,7 @@ val에서 고정한 두 설정(문체 C=0.1, 결합 C=0.1)을 train 전체로 �
 - 개발사 수준은 잘 구분하나 GLM↔Claude, Kimi·Qwen→OpenAI 혼동이 크다.
 - 한계: val 질문 22개뿐이라 구간이 넓다(±0.05). 결합 C=1/10은 5,000회 안에 수렴하지 않았다. 문체 스케일링 방식이 공통 extractor와 다르다. 보정은 one-vs-rest sigmoid라 개발사 ECE(0.148)가 높다.
 - **test:** 문체 C=0.1(공통 입력 비교용)과 결합 C=0.1(B 최종)의 예측을 제출했다. 채점은 팀 통합 때 1회.
+- **질문 중심화(6.5절):** 같은 질문 평균을 빼면 모델 BA가 0.08 안팎 올라 결합 concat 0.386이 된다. 다만 같은 질문의 응답 묶음이 있어야 쓸 수 있으므로 응답 단독 결과와 나눠 보고한다.
 
 ## 9. 코드·산출물
 
