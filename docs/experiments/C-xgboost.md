@@ -193,7 +193,7 @@
 | 학습 코드 | `seorin`: [`experiments/run_xgb_official.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/02715c9/experiments/run_xgb_official.py) (탐색), [`cv.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/02715c9/experiments/cv.py)·[`bfeat.py`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/02715c9/experiments/bfeat.py) (5-fold) · 최종 재학습: [`notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/e5b3c9b/notebooks/kaggle_session_2026-11-18/llmnametagging.ipynb) 셀 B |
 | 모델 체크포인트 | 저장하지 않음. 위 코드로 CPU 약 1.5분에 다시 학습 |
 | 설정 / 체크포인트 (필요 시) | 2.3절 |
-| 평가 결과 CSV | `seorin`: [`preds/val_C_XGB.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/5869bb7/preds/val_C_XGB.csv), [`preds/test_C_XGB.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/5869bb7/preds/test_C_XGB.csv) (test 채점 없음) |
+| 평가 결과 CSV | `seorin`: [`preds/val_C_XGB.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/5869bb7/preds/val_C_XGB.csv), [`preds/test_C_XGB.csv`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/5869bb7/preds/test_C_XGB.csv) (test 채점 없음) · seed별: `preds/val_C_XGB_seed42~44.csv`, `test_C_XGB_seed42~44.csv` (`c262b0d`, 재실행 노트북 [`c5bb47c`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/c5bb47c/notebooks/kaggle_session_2026-11-18_xgb_seed/llmnametagging.ipynb)) |
 | Confusion Matrix | 4.1절 표 (그림 없음) |
 | 특징 분석 그래프 | 4.2절 표 (그림 없음) |
 | 최종 실험 보고서 | 이 문서 · 요약: [C 실험 요약](C-summary.md) |

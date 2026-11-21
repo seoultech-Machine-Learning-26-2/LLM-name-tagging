@@ -1,10 +1,10 @@
 # C · 실험 요약: XGBoost + Qwen3.5-0.8B LoRA
 
-> 담당: 양서린(C) · 상태: **val 실험 완료 / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-18 · 정리: C/Claude
+> 담당: 양서린(C) · 상태: **val 실험 완료 / test 예측 저장(채점은 팀 통합 때 1회)** · 작성: 2026-11-18 · 수정: 2026-11-18 (Q-10 결정 3·4 반영) · 정리: C/Claude
 > 질문: 부스팅과 추가 학습(LoRA)이 비용 대비 어떤 효과를 내는가? · 모든 점수는 val 기준이며, test는 12월 팀 통합 때 1회 채점한다.
 
 상세 결과(결과 템플릿 형식): [C · XGBoost](C-xgboost.md) · [C · Qwen3.5-0.8B + LoRA](C-qwen-lora.md)
-코드·예측: `seorin` 브랜치 [`02715c9`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/02715c9/experiments)(XGBoost 원본 스크립트), [`5869bb7`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds)(예측), [`e5b3c9b`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/e5b3c9b/notebooks)(Kaggle 노트북 원본: 학습 Version 2, 앙상블·test 예측 세션)
+코드·예측: `seorin` 브랜치 [`02715c9`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/02715c9/experiments)(XGBoost 원본 스크립트), [`5869bb7`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/5869bb7/preds)(예측), [`e5b3c9b`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/tree/e5b3c9b/notebooks)(Kaggle 노트북 원본: 학습 Version 2, 앙상블·test 예측 세션), [`c5bb47c`](https://github.com/seoultech-Machine-Learning-26-2/LLM-name-tagging/blob/c5bb47c/notebooks/kaggle_session_2026-11-18_xgb_seed/llmnametagging.ipynb)(XGBoost seed별 예측 재실행, Q-10 결정 4)
 
 > **질문 묶음 이용 표시:** ①·②·③의 최종 설정은 **질문 중심화**(같은 `prompt_id` 응답 18개의 평균을 빼기)를 써서, 예측할 때 같은 질문의 다른 응답을 함께 쓴다. 응답 하나만 보는 예측의 최고값은 XGBoost 0.258, Qwen LoRA(Q2) 0.328이다. **배정 BA**는 헝가리안 배정 후처리 결과라 주 지표에 넣지 않는다([다음 작업 계획](../next-tasks-A-B-C-D.md) 4절 9번).
 
@@ -122,7 +122,9 @@ seed 3개 평균에서는 Q4가 V3보다 +1.9%p 높아 채택 기준을 넘었�
 | 파일 | 내용 |
 | --- | --- |
 | `seorin` `preds/val_C_FINAL.csv`, `preds/test_C_FINAL.csv` | 최종 앙상블 예측 (팀 앙상블용) |
-| `val_C_XGB.csv`, `test_C_XGB.csv` | XGBoost 3 seed 예측 |
+| `val_C_XGB.csv`, `test_C_XGB.csv` | XGBoost 3 seed 확률 평균 예측 |
+| `val_C_XGB_seed42.csv` ~ `seed44`, `test_C_XGB_seed42.csv` ~ `seed44` | XGBoost seed별 예측 (6개, Q-10 결정 4, `c262b0d`). 세 파일 평균 = `C_XGB` |
+| `val_V3_rdrop_seed42~44`, `val_Q4_hier_seed42~44` ↔ `test_C_V3_seed42~44`, `test_C_Q4_seed42~44` | 팀 앙상블에 쓰는 Qwen 개별 파일 6쌍 (Q-10 결정 3) |
 | `test_C_Q2.csv` ~ `test_C_Q4_seed44.csv` | Qwen 개별 모델 test 예측 (8개) |
 | `test_nolabel.csv` | 정답 열을 제거한 test (팀원 예측용) |
 
@@ -133,4 +135,5 @@ seed 3개 평균에서는 Q4가 V3보다 +1.9%p 높아 채택 기준을 넘었�
 - 학습: Colab T4(seed 42) → Kaggle T4(seed 43·44), 1회 학습 약 1시간 10분, 최대 메모리 5.4GB
 - XGBoost 탐색: Linux CPU, Python 3.13.18, scikit-learn 1.9.1, xgboost 3.4.1 (상세는 [C · XGBoost](C-xgboost.md) 1절)
 - Kaggle 라이브러리 버전(2026-11-18 확인): Python 3.13.16 / NumPy 2.1.3 / pandas 2.3.3 / scikit-learn 1.6.1, torch 2.11.0+cu130, transformers 5.23.0, peft 0.21.3, accelerate 1.16.0, xgboost 3.4.1, scipy 1.16.3 (flash-linear-attention 버전은 미기록). 학습 당시 버전과 다를 수 있다(매번 최신 설치)
+- XGBoost seed별 파일: Kaggle GPU T4 세션(가속기 켬, XGBoost는 CPU로 학습), Python 3.13.18, xgboost 3.4.1, scikit-learn 1.6.1, numpy 2.1.3, pandas 2.3.3, scipy 1.16.3. 가속기를 끈 CPU 전용 세션에서는 조기 종료 트리 수가 달라졌다(660/629, 하드웨어에 따른 부동소수점 차이로 추정)
 - 모델 체크포인트: 깃허브 미포함. 저장 위치·복원 방법은 [C · Qwen LoRA](C-qwen-lora.md) 7절
