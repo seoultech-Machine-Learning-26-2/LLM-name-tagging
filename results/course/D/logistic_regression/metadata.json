@@ -1,0 +1,40 @@
+{
+  "env": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "scipy": "1.16.3",
+    "code_commit": "7f94c2a"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "Cs": [
+    0.1,
+    1.0,
+    10.0,
+    100.0
+  ],
+  "kinds": [
+    "style",
+    "tfidf",
+    "combined"
+  ],
+  "max_features": [
+    1000,
+    5000,
+    30000
+  ],
+  "centering": [
+    "raw",
+    "centered",
+    "concat"
+  ],
+  "max_iter": 5000,
+  "selected_C": 1.0,
+  "best_config": "combined_mf5000_C10.0_concat"
+}

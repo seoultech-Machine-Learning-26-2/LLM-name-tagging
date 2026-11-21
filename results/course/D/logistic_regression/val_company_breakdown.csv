@@ -1,0 +1,9 @@
+company,n_models,n_val,company_recall,company_chance,within_company_n,within_company_acc,within_company_chance
+Google,4.0,88.0,0.9545,0.1667,82.0,0.5122,0.25
+OpenAI,5.0,110.0,0.8727,0.1667,89.0,0.4831,0.2
+Anthropic,5.0,110.0,0.7818,0.1667,81.0,0.6667,0.2
+Qwen,1.0,22.0,0.4545,0.1667,0.0,,
+ZAI,2.0,44.0,0.2727,0.1667,13.0,0.3077,0.5
+Moonshot,1.0,22.0,0.2273,0.1667,0.0,,
+ALL(6),,,0.5939,0.1667,,,
+MULTI_ONLY(4),,,0.7204,0.25,,0.5396,
