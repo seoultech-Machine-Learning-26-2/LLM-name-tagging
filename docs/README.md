@@ -27,6 +27,7 @@
 - [질문함·회의 안건](discussion.md): 팀원에게 할 질문·제안을 적고 결정 결과를 기록한다.
 - B 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [Linear SVM](experiments/B-svm.md) · [ModernBERT + 대조 학습](experiments/B-modernbert.md)
 - C 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [요약](experiments/C-summary.md) · [XGBoost](experiments/C-xgboost.md) · [Qwen3.5-0.8B + LoRA](experiments/C-qwen-lora.md)
+- [11/25 중간발표 자료](midterm-presentation.md) (2026-11-21, C 정리, val 기준 6분 30초·13장): PPT(A)·대본(D)·발표(B)용 슬라이드별 화면·말할 것·숫자 출처
 
 ## 문서 갱신 방법
 
