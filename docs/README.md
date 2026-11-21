@@ -19,11 +19,14 @@
 
 ## 다음 작업과 작성 양식
 
-- **팀 합의 마감:** 11/18까지 고전·심화 실행과 결과 템플릿 작성 완료. 11/19~12/14 작업 미배정, 12/15~12/18 최종 보고서 작성·제출.
+- **팀 합의 마감:** 11/18까지 고전·심화 실행과 결과 템플릿 작성 완료. 11/20까지 4명 모두 질문 중심화 적용. 11/25 중간 발표(질의응답, val 결과 기준; B 발표, A PPT, C 자료 정리, D 대본). 그 외 11/19~12/14 작업 미배정, 12/15 test 일괄 채점, 12/15~12/18 최종 보고서 작성·제출.
 - [Kaggle·Google Colab 실행 안내](notebook-environments.md): 두 환경의 GPU 설정·입력 준비·실행·결과 보관 방법.
 
 - [다음 단계 A·B·C·D 작업 계획](next-tasks-A-B-C-D.md): 강의 중심 실험·담당·일정. 기존 수행 기록과 구분한다.
 - [개인 실험 결과 템플릿](experiment-result-template.md): 새 실험 보고서를 만들 때 복사한다. 미실행 결과는 빈칸 또는 `미측정`으로 둔다.
+- [질문함·회의 안건](discussion.md): 팀원에게 할 질문·제안을 적고 결정 결과를 기록한다.
+- B 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [Linear SVM](experiments/B-svm.md) · [ModernBERT + 대조 학습](experiments/B-modernbert.md)
+- C 실험 결과 (2026-11-18, val 완료·test 예측 저장, 채점은 팀 통합 때): [요약](experiments/C-summary.md) · [XGBoost](experiments/C-xgboost.md) · [Qwen3.5-0.8B + LoRA](experiments/C-qwen-lora.md)
 
 ## 문서 갱신 방법
 
