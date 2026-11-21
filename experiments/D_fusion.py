@@ -359,9 +359,9 @@ def compare_val(args, frames, y, X, out, commit):
             row, model, P = run_branch(branch, X, y, seed, HP, args.encoder, curve=curve)
             rows.append(row)
             curves += [dict(c, config=branch) for c in curve]
+            ev.save_pred(frames["val"].id, P, ev.CLASSES,
+                         args.pred_dir / f"val_D_fusion_{branch}_seed{seed}.csv")
             if seed == 42:
-                ev.save_pred(frames["val"].id, P, ev.CLASSES,
-                             args.pred_dir / f"val_D_fusion_{branch}_seed42.csv")
                 Ps[branch] = P
 
     res = pd.DataFrame(rows).assign(code_commit=commit)
