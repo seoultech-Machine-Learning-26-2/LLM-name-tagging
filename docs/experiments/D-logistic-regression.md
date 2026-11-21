@@ -2,24 +2,20 @@
 
 > 담당: 원하람(D) · 작성일: 2026-11-18 · 상태: val 완료, test 미평가
 > 심화 모델(Sentence-BERT 문체 융합)은 [`D-fusion.md`](D-fusion.md)에 따로 있다.
->
-> **주의:** 3절 이후의 수치는 차원 탐색·질문 중심화를 추가한 뒤 재실행한 값이며 Kaggle이 아닌
-> 보조 컨테이너에서 측정했다. 양쪽 환경에서 지표가 일치하는 것은 확인했으나
-> (`combined_mf30000_C10.0` 양쪽 모두 val BA 0.3056), 1절 환경 정보와 학습 시간은
-> Kaggle 재실행 후 갱신해야 한다.
+> 모든 수치는 Kaggle Notebook에서 실행한 값이다.
 
 ## 1. 실험 개요
 
 | 항목 | 내용 |
 | --- | --- |
 | 담당자 | 원하람 (D) |
-| OS/CPU/RAM/GPU | Kaggle Notebook (CPU 전용, GPU 미사용) |
+| OS/CPU/RAM/GPU | Kaggle Notebook, Linux-6.18.55+-x86_64 (CPU 전용, GPU 미사용) |
 | Python / NumPy / pandas / scikit-learn 버전 | 3.13.16 / 2.1.3 / 2.3.3 / 1.6.1 |
 | 추가 사용 라이브러리 버전 | scipy 1.16.3, matplotlib |
 | 실험 모델 | Logistic Regression (lbfgs, L2 규제) |
 | 모델 구분 | 고전 ML |
 | 실험 날짜 | 2026-11-18 |
-| 실험 환경 | Kaggle Notebook `notebooks/D_kaggle.ipynb`, 코드 커밋은 `val_results.csv`의 `code_commit` 열 |
+| 실험 환경 | Kaggle Notebook `notebooks/D_kaggle.ipynb`, 코드 커밋 `7f94c2a` |
 
 ## 2. 실험 설정
 
@@ -215,7 +211,7 @@ val이 396개뿐이라 BA의 신뢰구간이 넓다. C의 `bootstrap_ci`로 질�
 
 | 항목 | 결과 |
 | --- | --- |
-| 학습 시간 | 최종 설정 12.5초 (lbfgs 179회 반복). 전체 격자 47회 학습 약 5분 |
+| 학습 시간 | 최종 설정 29.7초 (lbfgs 179회 반복). 전체 격자 50회 학습 약 9분 |
 | 최종 선택된 모델 | `combined_mf5000_C10.0_concat`, seed 42 |
 | 최종 Epoch | 해당 없음 (lbfgs 수렴) |
 | 주요 특이사항 | seed 42/43/44의 모든 지표가 소수점까지 동일 (std 0.0) |
@@ -337,7 +333,7 @@ TF-IDF는 3만 차원이라 개별 계수 해석이 불가능하므로 문체 �
 
 - 계수를 직접 읽을 수 있어 어떤 문체 특징이 어느 모델과 연결되는지 설명할 수 있다.
 - `predict_proba`를 바로 제공해 별도 확률 보정 단계가 필요 없다.
-- 결정적이라 재현이 쉽고, 최종 설정도 12.5초로 학습이 빠르다.
+- 결정적이라 재현이 쉽고, 최종 설정도 30초로 학습이 빠르다. C의 Qwen LoRA 앙상블(T4 GPU 약 7시간)과 대비된다.
 
 **모델의 한계**
 
@@ -378,21 +374,23 @@ train을 질문 단위로 20/40/60/80/100%씩 떼어 학습하고 val을 측정�
 | --- | --- |
 | 학습 코드 | `experiments/D_logistic_regression.py` (`haram` 브랜치) |
 | Kaggle 노트북 | `notebooks/D_kaggle.ipynb` |
-| 모델 체크포인트 | 저장하지 않음 (전체 재실행 약 5분) |
+| 모델 체크포인트 | 저장하지 않음 (전체 재실행 약 9분) |
 | 평가 결과 CSV | `results/course/D/logistic_regression/val_results.csv`, `val_summary.csv` |
 | 통계 검정 CSV | `val_ci.csv` (설정별 신뢰구간), `val_pairwise.csv` (쌍별 paired bootstrap) |
 | 추가 분석 CSV | `val_calibration.csv`, `val_per_class.csv`, `val_sibling_errors.csv`, `val_company_breakdown.csv`, `val_errors_seed42.csv` |
 | Confusion Matrix | `results/course/D/logistic_regression/fig_confusion_val.png` |
 | 특징 분석 | `coefficients_style.csv`, `fig_config_comparison.png` |
-| 예측 파일 | `preds/val_D_lr_combined_mf5000_C10.0_concat_seed42.csv` |
+| 예측 파일 | `preds/val_D_lr_combined_mf5000_C10.0_concat_seed{42,43,44}.csv` — 세 파일의 내용은 동일하다(결정적 알고리즘). 팀 앙상블의 seed별 파일 규격을 맞추기 위해 모두 저장했다 |
 | 실행 환경 기록 | `results/course/D/logistic_regression/metadata.json` |
 | 최종 실험 보고서 | 이 문서 |
 
 ## 8. 남은 작업
 
-- Kaggle 재실행 후 1절 환경 정보와 학습 시간 갱신 (3절 이후 수치는 보조 컨테이너 측정)
 - **test 예측 파일 저장** (채점 없음). 현재 `--final`은 예측과 채점이 묶여 있어 분리가 필요하다
 - test 채점은 팀 통합 때 C가 1회 수행
+- 재현 확인: 같은 코드를 보조 컨테이너에서도 돌려 50개 설정 중 47개가 소수점까지 일치했다.
+  나머지 3개는 차이가 0.01 미만이며 그중 2개는 미수렴 설정과 30,032차원 설정이다. 최고 설정과
+  그 값(0.4116)은 양쪽이 동일하다.
 
 ## 부록 A. 실험 중 발견한 문제
 

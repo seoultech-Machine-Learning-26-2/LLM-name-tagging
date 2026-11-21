@@ -9,7 +9,7 @@
     "device": "cuda",
     "gpu": "Tesla T4",
     "encoder": "sentence-transformers/all-MiniLM-L6-v2",
-    "code_commit": "dfe3eba"
+    "code_commit": "54bc412"
   },
   "seeds": [
     42,
@@ -18,8 +18,15 @@
   ],
   "branches": [
     "semantic",
+    "semantic_centered",
     "style",
-    "fusion"
+    "style_centered",
+    "fusion",
+    "fusion_centered"
+  ],
+  "centering": [
+    "raw",
+    "centered"
   ],
   "hp": {
     "hidden": 256,
@@ -32,8 +39,11 @@
   },
   "input_dims": {
     "semantic": 384,
+    "semantic_centered": 384,
     "style": 32,
-    "fusion": 416
+    "style_centered": 32,
+    "fusion": 416,
+    "fusion_centered": 416
   },
-  "best_branch": "style"
+  "best_branch": "style_centered"
 }

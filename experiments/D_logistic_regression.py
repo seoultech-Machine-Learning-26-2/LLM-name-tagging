@@ -421,9 +421,14 @@ def compare_val(args, frames, y, out, commit):
     print(f"\n[seed 변동] {best.config}")
     bp = json.loads(best.params)
     for seed in SEEDS:
-        if seed != 42:
-            rows.append(run(best.feature_set, bp["C"], frames, y, seed,
-                            bp["max_features"], mode=bp.get("centering", "raw"))[0])
+        if seed == 42:
+            P = Ps[best.config]
+        else:
+            row, _, P = run(best.feature_set, bp["C"], frames, y, seed,
+                            bp["max_features"], mode=bp.get("centering", "raw"))
+            rows.append(row)
+        ev.save_pred(frames["val"].id, P, ev.CLASSES,
+                     args.pred_dir / f"val_D_lr_{best.config}_seed{seed}.csv")
 
     res = pd.DataFrame(rows).assign(code_commit=commit)
     res.to_csv(out / "val_results.csv", index=False)
@@ -440,8 +445,6 @@ def compare_val(args, frames, y, out, commit):
     print(f"  {best.config} 가 통계적으로 앞선 설정: {n_sig}/{len(pw)}")
 
     P_best = Ps[best.config]
-    ev.save_pred(frames["val"].id, P_best, ev.CLASSES,
-                 args.pred_dir / f"val_D_lr_{best.config}_seed42.csv")
     error_table(frames, y, P_best).to_csv(out / "val_errors_seed42.csv", index=False)
     calibration_table(y["val"], P_best).to_csv(out / "val_calibration.csv", index=False)
     per_class_table(y["val"], P_best).to_csv(out / "val_per_class.csv", index=False)
