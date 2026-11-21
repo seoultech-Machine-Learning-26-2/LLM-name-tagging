@@ -1,0 +1,62 @@
+{
+  "model": "microsoft/deberta-v3-base",
+  "conditions": {
+    "qb_nocenter_lam0": {
+      "center": false,
+      "lambda": 0.0
+    },
+    "qb_center_lam0": {
+      "center": true,
+      "lambda": 0.0
+    },
+    "qb_center_lam0.1": {
+      "center": true,
+      "lambda": 0.1
+    }
+  },
+  "seeds": [
+    42
+  ],
+  "n_topics_train": 105,
+  "truncated_at_max_len": {
+    "train": 0,
+    "val": 0
+  },
+  "args": {
+    "model": "microsoft/deberta-v3-base",
+    "conditions": "['qb_nocenter_lam0', 'qb_center_lam0', 'qb_center_lam0.1']",
+    "seeds": "[42]",
+    "epochs": "10",
+    "patience": "3",
+    "lr": "2e-05",
+    "head_lr": "0.001",
+    "dropout": "0.1",
+    "max_len": "512",
+    "amp": "True",
+    "data_dir": "/kaggle/working/LLM-name-tagging/data/split",
+    "out_dir": "/kaggle/working/LLM-name-tagging/results/course/A/deberta_centered",
+    "pred_dir": "/kaggle/working/LLM-name-tagging/preds/deberta_centered",
+    "commit": "None",
+    "debug_rows": "0"
+  },
+  "environment": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.20.2",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "cuda": "13.0",
+    "device": "cuda",
+    "gpu": "Tesla T4"
+  },
+  "code_commit": "54b5800",
+  "test_read": false,
+  "notes": [
+    "배치 = 질문 하나의 응답 전부, 중심화 평균도 그 안에서만 계산 (정답 사용 안 함)",
+    "중심화 조건의 작성자 헤드 입력: [z ; z − 질문 평균]",
+    "probe_*_z: 중심화 전 z, probe_*_head_input: 작성자 헤드 입력 (중심화 조건은 [z ; z − 평균])",
+    "test는 읽지 않음. 비교 대상(무작위 배치 16, 중심화 없음)은 results/course/A/deberta_ep10"
+  ]
+}
