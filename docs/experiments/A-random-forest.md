@@ -1,7 +1,7 @@
 # A: Random Forest 실험 결과
 
-> 담당: 좌은진(A) · 작성일: 2026-11-17 · 수정일: 2026-11-18 · 정리: A/Claude · 상태: val 완료, test 예측 미제출·채점 보류(팀 일괄 채점 대기)
-> 미완료: test 예측 파일(`test_nolabel.csv`), 데이터 출처(A-1)
+> 담당: 좌은진(A) · 작성일: 2026-11-17 · 수정일: 2026-11-22 · 정리: A/Claude · 상태: val 완료(응답 단독 3~6절, 질문 중심화 9절), test 예측 저장·채점 보류(팀 일괄 채점 대기)
+> 미완료: 데이터 출처(A-1)
 
 ## 1. 실험 개요
 
@@ -220,5 +220,75 @@
 - 최종 설정 d10은 바꾸지 않는다.
 
 **남은 작업**
-- test 예측 파일: C의 정답 없는 `test_nolabel.csv`(`seorin` 브랜치)로 d10 예측만 만들어 12/14까지 `preds/`에 올린다. 현재 코드의 `--final`은 정답이 있는 test를 읽어 채점까지 하므로, 예측만 저장하는 방법은 정한 뒤 진행한다.
+- test 예측 파일: 2026-11-22 질문 중심화 실행(9절)에서 d10의 응답 단독(`raw`)·질문 중심화(`sub`, `concat`) 예측을 seed별로 저장했다(정답 열을 읽지 않고 채점 없음). 응답 단독 `raw`는 3~6절 d10과 같은 모델이다(val 예측이 기존 파일과 동일).
 - 데이터 출처·사용 조건 기록 (A-1)
+
+## 9. 질문 중심화 (2026-11-22, 질문 묶음 이용)
+
+2026-11-18 회의 결정(질문함 Q-10 결정 2: 4명 모두 질문 중심화 적용)에 따른 추가 실험이다. 처음에는 심화 모델(DeBERTa)에만 적용했고, 다른 팀원이 모두 고전 모델에도 적용한 것을 확인한 뒤 11/22에 RF에도 적용했다(마감 11/20 이후). 적용 규칙은 질문함 Q-11을 따른다.
+
+### 9.1 방법
+
+- **모델 설정 고정:** 3~6절에서 val로 고른 d10(트리 100, 깊이 10, `min_samples_leaf=1`)을 그대로 쓰고 **입력만** 바꿨다. seed 42/43/44.
+- **입력 3종**
+
+| 입력 | 내용 | 특징 수 | 질문 묶음 |
+| --- | --- | ---: | --- |
+| `raw` | 문체 32개 그대로 (3~6절과 같은 입력) | 32 | 응답 단독 |
+| `sub` | X − 같은 `prompt_id` 응답들의 X 평균 (C XGBoost 방식) | 32 | 질문 묶음 이용 |
+| `concat` | [X ; X − 질문 평균] (C Qwen·B·D 방식) | 64 | 질문 묶음 이용 |
+
+- 질문 평균은 각 분할(train·val·test) 안에서 같은 질문의 응답끼리만 계산하고 정답(`model`)은 쓰지 않는다.
+- `sub`·`concat` 중 선택: val BA 평균 1위와의 차이가 1위의 seed 표준편차 이내면 val log loss가 낮은 쪽(3절과 같은 규칙).
+- test는 정답 열을 읽지 않고(`id`·`prompt_id`·`text`만, C `test_nolabel.csv`와 같은 내용) 예측 파일만 저장했다. 채점하지 않았다.
+- 실행: Kaggle CPU 4코어, `eunjin` 코드 커밋 `fa048f0`, `notebooks/A_rf_centered_kaggle.ipynb`. 환경은 1절과 같다.
+
+### 9.2 결과 (val, seed 3개)
+
+| 지표 | `raw` (응답 단독) | `sub` (선택) | `concat` |
+| --- | ---: | ---: | ---: |
+| **18개 모델 BA** (seed 평균 ± 표준편차) | 0.2054 ± 0.0130 | **0.2736 ± 0.0204** | 0.2744 ± 0.0125 |
+| 18개 모델 BA (seed 3개 확률 평균 예측) | 0.2247 | 0.2652 | 0.2854 |
+| Macro F1 | 0.1848 | 0.2578 | 0.2549 |
+| 개발사 BA (확률 합산) | 0.3750 | 0.4112 | 0.4111 |
+| 형제 정확도 | 0.3509 | 0.4402 | 0.4438 |
+| Log loss / ECE | 2.411 / 0.037 | 2.158 / 0.053 | 2.159 / 0.059 |
+| train BA (과적합 정도) | 0.973 | 0.983 | 0.990 |
+
+- `sub`와 `concat`의 val BA 차이는 seed 변동 범위 안이라, 규칙대로 log loss가 조금 더 낮은 `sub`를 골랐다.
+- `raw`는 3~6절 d10과 같은 모델이며 val 예측 파일이 기존 파일과 같았다(재현 확인).
+
+### 9.3 중심화 효과
+
+| 집계 기준 | `raw` → `sub` | 비고 |
+| --- | --- | --- |
+| seed별 BA의 평균 | 0.2054 → 0.2736, **+6.8%p** | 발표 그래프 기준(다른 모델의 seed 평균 표기와 같은 방식) |
+| seed 3개 확률 평균 예측, 질문 단위 paired bootstrap 1,000회 | 0.2247 → 0.2652, **+4.1%p, 95% CI [0.3, 7.8]%p** | 신뢰구간이 0보다 큼 |
+| 개발사 BA (paired bootstrap) | +3.2%p, 95% CI [1.0, 5.5]%p | |
+
+두 집계 기준의 숫자가 다르다(seed별 BA 평균 vs seed 확률을 평균한 하나의 예측). 같은 질문의 공통 성분을 빼자 문체 32개만으로도 18개 모델 BA가 올랐다. 3~6절에서 트리 수·깊이를 바꿔도 val이 0.21 근처에 머물렀던 것과 대비된다. 문체 숫자에 질문(주제·형식)의 영향이 섞여 있었고, 이를 빼면 작성 모델의 차이가 더 드러난다는 해석과 맞다(5절 가설 보완).
+
+### 9.4 분석 (`sub`, val)
+
+- **특징 중요도:** 긴 대시(`em_dash_per_100_chars`)가 MDI·순열 중요도 모두 1위(순열 0.077)이고, 평균 단어 길이가 순열 중요도 2위(0.031)로 올라왔다(중심화 전 −0.002). 질문 평균을 빼면 같은 질문 안에서 "다른 모델보다 긴 단어를 쓰는지"가 단서가 된 것으로 본다.
+- **개발사 재현율 (seed 42):** Google 0.886, Anthropic 0.736, OpenAI 0.709, ZAI 0.068, Moonshot·Qwen 0. 모델 수가 적은 개발사가 예측되지 않는 문제는 남았다(DeBERTa 중심화는 Moonshot 0.409, ZAI 0.364).
+- **오분류:** 289개 중 40.1%가 같은 개발사 안의 혼동. 주요 쌍: `gemini-3.8-flash` → `gemini-3.7-flash` 10, `gemini-3.7-flash` → `gemini-3.8-flash` 8, `gemini-3.6-flash` → `gemini-3.1-pro-preview` 7, `claude-opus-4-8` → `claude-sonnet-5` 7.
+
+### 9.5 한계
+
+- 같은 질문의 응답 묶음이 있어야 쓸 수 있다(계획 4절 9번: 응답 단독 결과와 구분해 적는다).
+- 모델 설정(d10)은 중심화 전 입력으로 고른 것이다. 중심화 입력에 맞춰 다시 고르지 않았다(입력만 바꾼 통제 비교).
+- 마감(11/20) 이후 실행했다.
+
+### 9.6 산출물 (`eunjin` 브랜치)
+
+| 산출물 | 저장 경로 |
+| --- | --- |
+| 코드 | `experiments/A_rf_centered.py` (`A_random_forest.py`의 함수 사용, 기존 파일은 수정하지 않음) |
+| Kaggle 노트북 | `notebooks/A_rf_centered_kaggle.ipynb` (이 실행에 사용) |
+| 결과 CSV | `results/course/A/random_forest_centered/val_results.csv`, `val_summary.csv`, `val_compare_raw_vs_sub.csv`, `feature_importance.csv`, `val_errors_seed42.csv` |
+| 그림 | `results/course/A/random_forest_centered/fig_input_comparison.png`, `fig_feature_importance.png`, `fig_confusion_val.png` |
+| 실행 환경 기록 | `results/course/A/random_forest_centered/metadata.json` |
+| 예측 파일 | `preds/val_A_rf_d10_{raw,sub,concat}_seed{42,43,44}.csv`, `preds/test_A_rf_d10_{raw,sub,concat}_seed{42,43,44}.csv` (test는 채점 없음) |
+
+결과 파일은 2026-11-22 Kaggle 실행의 원본 출력이다. 9.2의 seed 확률 평균 BA와 9.4의 재현율·오분류는 저장된 val 예측 파일을 공통 `evaluate.py`로 다시 계산한 값이다.
